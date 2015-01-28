@@ -1,22 +1,32 @@
-package io.innerloop.neo4j.ogm.mapping;
+package io.innerloop.neo4j.ogm.metadata;
 
 import java.util.Arrays;
 
 /**
  * Created by markangrish on 14/11/2014.
  */
-public class MetaDataLabelKey
+public class SortedMultiLabel
 {
     private final String[] labels;
 
-    public MetaDataLabelKey(String[] labels)
+    public SortedMultiLabel(String[] labels)
     {
+        Arrays.sort(labels);
         this.labels = labels;
     }
 
     public String[] getLabels()
     {
         return labels;
+    }
+
+    public String asCypher()
+    {
+        String result = "";
+        for (String label : labels)
+        {
+            result += ":" + label;
+        } return result;
     }
 
     @Override
@@ -31,7 +41,7 @@ public class MetaDataLabelKey
             return false;
         }
 
-        MetaDataLabelKey that = (MetaDataLabelKey) o;
+        SortedMultiLabel that = (SortedMultiLabel) o;
 
         return Arrays.deepEquals(labels, that.labels);
 

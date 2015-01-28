@@ -1,4 +1,4 @@
-package io.innerloop.neo4j.ogm.mapping.converters;
+package io.innerloop.neo4j.ogm.metadata.converters;
 
 
 import java.util.Currency;
