@@ -20,6 +20,8 @@ import java.net.ServerSocket;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 /**
  * Created by markangrish on 17/12/2014.
@@ -66,24 +68,24 @@ public class EndToEndTests
 
 
     @Test
+    public void testFindDomainObjectReturnsNull() throws Neo4jClientException
+    {
+        Session session = sessionFactory.openSession();
+        // don't load anything into the database. Just look for it.
+        Actor actor = session.load(Actor.class, "name", "Keanu Reeves");
+        assertNull(actor);
+    }
+
+    @Test
     public void testSaveReachableDomainObjectsAndRelationships() throws Neo4jClientException
     {
         Session session = sessionFactory.openSession();
-        Transaction transaction = session.getTransaction();
 
-        try
-        {
-            Actor keanu = new Actor("Keanu Reeves");
-            Movie matrix = new Movie("Matrix", 1999);
-            Role neo = new Role(keanu, matrix, "Neo");
+        Actor keanu = new Actor("Keanu Reeves");
+        Movie matrix = new Movie("Matrix", 1999);
+        Role neo = new Role(keanu, matrix, "Neo");
 
-            session.save(neo);
-            transaction.commit();
-        }
-        catch (Neo4jClientException e)
-        {
-            transaction.rollback();
-        }
+        session.save(neo);
 
         List<Actor> actors = session.loadAll(Actor.class);
 

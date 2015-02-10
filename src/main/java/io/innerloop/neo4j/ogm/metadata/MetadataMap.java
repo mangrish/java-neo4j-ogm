@@ -1,5 +1,7 @@
 package io.innerloop.neo4j.ogm.metadata;
 
+import io.innerloop.neo4j.ogm.Utils;
+import io.innerloop.neo4j.ogm.annotations.Property;
 import io.innerloop.neo4j.ogm.annotations.Transient;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -71,18 +73,8 @@ public class MetadataMap
 
             String[] labelArray = labels.toArray(new String[labels.size()]);
             SortedMultiLabel key = new SortedMultiLabel(labelArray);
-            ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, primaryLabel, key);
+            ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, this, primaryLabel, key);
 
-            for (Field field: cls.getDeclaredFields())
-            {
-                if (Modifier.isTransient(field.getModifiers()) && Modifier.isStatic(field.getModifiers()))
-                {
-                    continue;
-                }
-
-                PropertyMetadata pm = new PropertyMetadata(field.getName(),field.getName(), field.getType(), field);
-                classMetadata.addPropertyMetadata(pm);
-            }
 
             lookupByLabel.put(primaryLabel, classMetadata);
             lookupByClass.put(cls, classMetadata);

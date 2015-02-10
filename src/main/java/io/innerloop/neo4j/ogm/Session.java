@@ -5,9 +5,8 @@ import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Neo4jClientException;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.client.Transaction;
-import io.innerloop.neo4j.ogm.mapping.CypherMapper;
+import io.innerloop.neo4j.ogm.mapping.CypherQueryMapper;
 import io.innerloop.neo4j.ogm.mapping.GraphResultMapper;
-import io.innerloop.neo4j.ogm.metadata.MetadataMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +28,7 @@ public class Session
 
     private static ThreadLocal<Session> sessions = new ThreadLocal<>();
 
-    static Session getSession(Neo4jClient client, CypherMapper cypherMapper, GraphResultMapper graphResultMapper)
+    static Session getSession(Neo4jClient client, CypherQueryMapper cypherMapper, GraphResultMapper graphResultMapper)
     {
         LOG.debug("Retrieving session for thread: [{}]", Thread.currentThread().getName());
         Session session = sessions.get();
@@ -48,13 +47,13 @@ public class Session
 
     private final Neo4jClient client;
 
-    private final CypherMapper cypherMapper;
+    private final CypherQueryMapper cypherMapper;
 
     private final GraphResultMapper graphResultMapper;
 
     private Transaction activeTransaction;
 
-    public Session(Neo4jClient client, CypherMapper cypherMapper, GraphResultMapper graphResultMapper)
+    public Session(Neo4jClient client, CypherQueryMapper cypherMapper, GraphResultMapper graphResultMapper)
     {
         this.client = client;
         this.cypherMapper = cypherMapper;
@@ -103,7 +102,9 @@ public class Session
         if (activeTransaction == null)
         {
             this.activeTransaction = client.getLongTransaction();
+            this.activeTransaction.begin();
         }
+
         return activeTransaction;
     }
 
@@ -135,7 +136,6 @@ public class Session
         }
 
         assertReadOnly(cypher);
-
         Statement<Graph> statement = cypherMapper.query(cypher, parameters);
         Transaction txn = getTransaction();
 
@@ -217,7 +217,7 @@ public class Session
             return null;
         }
 
-        if (resultSize < 1)
+        if (resultSize > 1)
         {
             throw new RuntimeException("Result not of expected size. Expected 1 row but found " + resultSize);
         }

@@ -1,12 +1,13 @@
 package io.innerloop.neo4j.ogm.metadata;
 
-import io.innerloop.neo4j.client.Graph;
-import io.innerloop.neo4j.client.GraphStatement;
-import io.innerloop.neo4j.client.Statement;
+import com.google.common.base.CaseFormat;
 import io.innerloop.neo4j.client.json.JSONObject;
+import io.innerloop.neo4j.ogm.Utils;
+import io.innerloop.neo4j.ogm.annotations.Property;
+import io.innerloop.neo4j.ogm.annotations.Relationship;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,34 +23,99 @@ public class ClassMetadata<T>
 
     private final SortedMultiLabel key;
 
-    private final List<PropertyMetadata> fieldMetadata;
+    private final Map<String, PropertyMetadata> propertyMetadata;
 
-    private final boolean isAbstract;
+    private final Map<String, RelationshipMetadata> relationshipMetadata;
 
-    public ClassMetadata(Class<T> type,  String primaryLabel, SortedMultiLabel key)
+    public ClassMetadata(Class<T> type, MetadataMap metadataMap, String primaryLabel, SortedMultiLabel key)
     {
         this.type = type;
         this.primaryLabel = primaryLabel;
         this.key = key;
-        this.fieldMetadata = new ArrayList<>();
-        this.isAbstract = Modifier.isAbstract( type.getModifiers());
+        this.propertyMetadata = new HashMap<>();
+        this.relationshipMetadata = new HashMap<>();
+
+        for (Field field : Utils.getFields(type))
+        {
+            if (Modifier.isTransient(field.getModifiers()) && Modifier.isStatic(field.getModifiers()))
+            {
+                continue;
+            }
+            else if (field.isAnnotationPresent(Property.class) &&
+                Utils.isNotEmpty(field.getAnnotation(Property.class).name()))
+            {
+                PropertyMetadata pm = new PropertyMetadata(field.getAnnotation(Property.class).name(), field);
+                propertyMetadata.put(pm.getName(), pm);
+            }
+            else if (field.isAnnotationPresent(Relationship.class) &&
+                Utils.isNotEmpty(field.getAnnotation(Relationship.class).type()))
+            {
+                RelationshipMetadata rm = new RelationshipMetadata(field.getAnnotation(Relationship.class).type(), field);
+                relationshipMetadata.put(rm.getType(), rm);
+            }
+            else
+            {
+                Class cls = field.getType();
+                ClassMetadata classMetadata = metadataMap.get(cls);
+
+                if (classMetadata == null)
+                {
+                    propertyMetadata.put(field.getName(), new PropertyMetadata(field));
+                }
+                else
+                {
+                    String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, field.getName());
+                    relationshipMetadata.put(relType, new RelationshipMetadata(relType, field));
+                }
+            }
+        }
     }
 
-    public void addPropertyMetadata(PropertyMetadata propertyMetadata)
+
+    public SortedMultiLabel getLabelKey()
     {
-        fieldMetadata.add(propertyMetadata);
+        return key;
     }
 
-    public Statement<Graph> getMatchStatement()
+    public JSONObject toJsonObject(T entity)
     {
-        return null;
+        JSONObject result = new JSONObject();
+
+        for (PropertyMetadata pm : propertyMetadata.values())
+        {
+            result.put(pm.getName(), pm.toJson(entity));
+        }
+
+        return result;
     }
 
-    public Statement<Graph> getMergeStatement(T entity)
+    public T createInstance(Map<String, Object> properties)
     {
-        Statement<Graph> merge = new GraphStatement("MERGE (e" + key.asCypher() + "{uuid:{0}}) SET e = {1}");
-        merge.setParam("0", "abcd1234");
-        merge.setParam("1", new JSONObject(entity));
-        return merge;
+        try
+        {
+            T instance = type.newInstance();
+
+            for (Map.Entry<String, Object> entry : properties.entrySet())
+            {
+                PropertyMetadata pm = propertyMetadata.get(entry.getKey());
+                pm.setValue(entry.getValue(), instance);
+            }
+
+            return instance;
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new RuntimeException("Could not instantiate class class");
+        }
+    }
+
+    public Iterable<RelationshipMetadata> getRelationships()
+    {
+        return relationshipMetadata.values();
+    }
+
+    public RelationshipMetadata getRelationship(String relationshipType)
+    {
+        return relationshipMetadata.get(relationshipType);
     }
 }
