@@ -1,6 +1,7 @@
 package io.innerloop.neo4j.ogm.metadata;
 
 import io.innerloop.neo4j.ogm.Utils;
+import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.metadata.converters.Converter;
 
 import java.lang.reflect.Field;
@@ -27,6 +28,20 @@ public class PropertyMetadata
         this.fieldName = field.getName();
         this.type = field.getType();
         this.field = field;
+
+        if (field.isAnnotationPresent(Convert.class))
+        {
+            Class<?> converterCls = field.getAnnotation(Convert.class).value();
+            try
+            {
+                this.converter = (Converter) converterCls.newInstance();
+            }
+            catch (InstantiationException | IllegalAccessException e)
+            {
+                throw new RuntimeException("Could not find converter class: " + converterCls.getName(), e);
+            }
+        }
+
         this.field.setAccessible(true);
     }
 
@@ -58,7 +73,12 @@ public class PropertyMetadata
     {
         try
         {
-            field.set(instance, value);
+            Object val = value;
+            if (converter != null)
+            {
+                val = converter.deserialize(value);
+            }
+            field.set(instance, val);
         }
         catch (IllegalAccessException e)
         {

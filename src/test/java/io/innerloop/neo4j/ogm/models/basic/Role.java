@@ -1,5 +1,7 @@
 package io.innerloop.neo4j.ogm.models.basic;
 
+import io.innerloop.neo4j.ogm.annotations.Convert;
+import io.innerloop.neo4j.ogm.metadata.converters.UUIDConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
 import java.util.UUID;
@@ -10,6 +12,7 @@ import java.util.UUID;
 
 public class Role
 {
+    @Convert(UUIDConverter.class)
     private UUID uuid;
 
     private Movie movie;
@@ -17,6 +20,11 @@ public class Role
     private Actor actor;
 
     private String name;
+
+    public Role()
+    {
+        // Do nothing...
+    }
 
     public Role(Actor actor, Movie movie, String name)
     {

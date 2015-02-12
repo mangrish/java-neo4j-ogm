@@ -5,23 +5,32 @@ package io.innerloop.neo4j.ogm.models.basic;
  */
 
 
+import io.innerloop.neo4j.ogm.annotations.Convert;
+import io.innerloop.neo4j.ogm.metadata.converters.UUIDConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 public class Actor
 {
+    @Convert(UUIDConverter.class)
     private UUID uuid;
 
     private String name;
 
     private Set<Role> roles;
 
+    public Actor() {
+        // do nothing...
+    }
+
     public Actor(String name)
     {
         this.uuid = UuidGenerator.generate();
         this.name = name;
+        this.roles = new HashSet<>();
     }
 
     public Iterable<Role> getRoles()

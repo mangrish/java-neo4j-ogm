@@ -65,37 +65,31 @@ public class Session
     public void close()
     {
         LOG.debug("Closing session on thread: [{}]", Thread.currentThread().getName());
-        sessions.remove();
-        activeTransaction = null;
+        Transaction txn = getTransaction();
+        try
+        {
+            txn.commit();
+        }
+        catch (Neo4jClientException e)
+        {
+            try
+            {
+                LOG.warn("Could not commit transaction on thread [{}]. Rolling back...",
+                         Thread.currentThread().getName());
+                txn.rollback();
+            }
+            catch (Neo4jClientException e1)
+            {
+                LOG.error("Could not rollback transaction on thread [{}].", Thread.currentThread().getName());
+            }
+        }
+        finally
+        {
+            txn.close();
+            sessions.remove();
+            activeTransaction = null;
+        }
     }
-
-    //    public void commit()
-    //    {
-    //        LOG.debug("Committing transaction on thread [{}].", Thread.currentThread().getName());
-    //        Transaction txn = getTransaction();
-    //        try
-    //        {
-    //            txn.commit();
-    //        }
-    //        catch (Neo4jClientException e)
-    //        {
-    //            try
-    //            {
-    //                LOG.warn("Could not commit transaction on thread [{}]. Rolling back...",
-    //                         Thread.currentThread().getName());
-    //                txn.rollback();
-    //            }
-    //            catch (Neo4jClientException e1)
-    //            {
-    //                LOG.error("Could not rollback transaction on thread [{}].", Thread.currentThread().getName());
-    //            }
-    //        }
-    //        finally
-    //        {
-    //            txn.close();
-    //            activeTransaction = null;
-    //        }
-    //    }
 
     public Transaction getTransaction()
     {

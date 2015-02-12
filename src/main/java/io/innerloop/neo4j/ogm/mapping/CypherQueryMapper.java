@@ -57,6 +57,8 @@ public class CypherQueryMapper
             nodeStatement.setParam("1", classMetadata.toJsonObject(ref));
             nodeStatements.add(nodeStatement);
 
+            visited.put(ref, ref);
+
             for (RelationshipMetadata rm : classMetadata.getRelationships())
             {
                 Object edge = rm.getValue(ref);

@@ -4,6 +4,8 @@ package io.innerloop.neo4j.ogm.models.basic;
  * Created by markangrish on 17/12/2014.
  */
 
+import io.innerloop.neo4j.ogm.annotations.Convert;
+import io.innerloop.neo4j.ogm.metadata.converters.UUIDConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
 import java.time.Year;
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 public class Movie
 {
+    @Convert(UUIDConverter.class)
     private UUID uuid;
 
     String title;
@@ -26,6 +29,10 @@ public class Movie
 
     private Year releaseDate;
 
+    public Movie()
+    {
+        // do nothing..
+    }
 
     public Movie(String title, int releaseDate)
     {

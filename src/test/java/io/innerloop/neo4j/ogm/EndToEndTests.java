@@ -2,10 +2,10 @@ package io.innerloop.neo4j.ogm;
 
 import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Neo4jClientException;
-import io.innerloop.neo4j.client.Transaction;
 import io.innerloop.neo4j.ogm.models.basic.Actor;
 import io.innerloop.neo4j.ogm.models.basic.Movie;
 import io.innerloop.neo4j.ogm.models.basic.Role;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -20,7 +20,6 @@ import java.net.ServerSocket;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 /**
@@ -30,12 +29,18 @@ public class EndToEndTests
 {
     private static final Logger LOG = LoggerFactory.getLogger(EndToEndTests.class);
 
-    private static SessionFactory sessionFactory;
+    private SessionFactory sessionFactory;
 
-    private static CommunityNeoServer server;
+    private CommunityNeoServer server;
 
     @BeforeClass
-    public static void oneTimeSetUp() throws IOException, InterruptedException
+    public static void oneTimeSetUp()
+    {
+
+    }
+
+    @Before
+    public void setUp() throws IOException, InterruptedException
     {
         int port = new ServerSocket(0).getLocalPort();
 
@@ -54,16 +59,16 @@ public class EndToEndTests
         sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.basic");
     }
 
-    @Before
-    public void setUp()
+    @After
+    public void tearDown()
     {
-
+        server.stop();
     }
 
     @AfterClass
     public static void oneTimeTearDown()
     {
-        server.stop();
+
     }
 
 
@@ -74,6 +79,7 @@ public class EndToEndTests
         // don't load anything into the database. Just look for it.
         Actor actor = session.load(Actor.class, "name", "Keanu Reeves");
         assertNull(actor);
+        session.close();
     }
 
     @Test
@@ -83,13 +89,15 @@ public class EndToEndTests
 
         Actor keanu = new Actor("Keanu Reeves");
         Movie matrix = new Movie("Matrix", 1999);
-        Role neo = new Role(keanu, matrix, "Neo");
+        keanu.playedIn(matrix,"Neo");
 
-        session.save(neo);
+        session.save(keanu);
         session.flush();
 
         List<Actor> actors = session.loadAll(Actor.class);
 
         assertEquals(1, actors.size());
+
+        session.close();
     }
 }
