@@ -13,6 +13,7 @@ public class RelationshipMetadata
     private final boolean collection;
     public RelationshipMetadata(String type, Field field)
     {
+        this.type = type;
         this.collection = Collection.class.isAssignableFrom(field.getType());
         this.field = field;
         this.field.setAccessible(true);

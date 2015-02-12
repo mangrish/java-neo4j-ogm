@@ -86,6 +86,7 @@ public class EndToEndTests
         Role neo = new Role(keanu, matrix, "Neo");
 
         session.save(neo);
+        session.flush();
 
         List<Actor> actors = session.loadAll(Actor.class);
 

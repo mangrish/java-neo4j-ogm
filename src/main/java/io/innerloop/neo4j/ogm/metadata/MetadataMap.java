@@ -73,7 +73,7 @@ public class MetadataMap
 
             String[] labelArray = labels.toArray(new String[labels.size()]);
             SortedMultiLabel key = new SortedMultiLabel(labelArray);
-            ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, this, primaryLabel, key);
+            ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, classesToProcess, primaryLabel, key);
 
 
             lookupByLabel.put(primaryLabel, classMetadata);

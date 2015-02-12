@@ -3,6 +3,7 @@ package io.innerloop.neo4j.ogm.metadata;
 import com.google.common.base.CaseFormat;
 import io.innerloop.neo4j.client.json.JSONObject;
 import io.innerloop.neo4j.ogm.Utils;
+import io.innerloop.neo4j.ogm.annotations.Indexed;
 import io.innerloop.neo4j.ogm.annotations.Property;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 
@@ -19,19 +20,21 @@ public class ClassMetadata<T>
 {
     private final Class<T> type;
 
+    private PropertyMetadata primaryField;
+
     private final String primaryLabel;
 
-    private final SortedMultiLabel key;
+    private final SortedMultiLabel labelKey;
 
     private final Map<String, PropertyMetadata> propertyMetadata;
 
     private final Map<String, RelationshipMetadata> relationshipMetadata;
 
-    public ClassMetadata(Class<T> type, MetadataMap metadataMap, String primaryLabel, SortedMultiLabel key)
+    public ClassMetadata(Class<T> type, List<Class<?>> metadataMap, String primaryLabel, SortedMultiLabel labelKey)
     {
         this.type = type;
         this.primaryLabel = primaryLabel;
-        this.key = key;
+        this.labelKey = labelKey;
         this.propertyMetadata = new HashMap<>();
         this.relationshipMetadata = new HashMap<>();
 
@@ -42,25 +45,33 @@ public class ClassMetadata<T>
                 continue;
             }
             else if (field.isAnnotationPresent(Property.class) &&
-                Utils.isNotEmpty(field.getAnnotation(Property.class).name()))
+                     Utils.isNotEmpty(field.getAnnotation(Property.class).name()))
             {
                 PropertyMetadata pm = new PropertyMetadata(field.getAnnotation(Property.class).name(), field);
                 propertyMetadata.put(pm.getName(), pm);
             }
             else if (field.isAnnotationPresent(Relationship.class) &&
-                Utils.isNotEmpty(field.getAnnotation(Relationship.class).type()))
+                     Utils.isNotEmpty(field.getAnnotation(Relationship.class).type()))
             {
-                RelationshipMetadata rm = new RelationshipMetadata(field.getAnnotation(Relationship.class).type(), field);
+                RelationshipMetadata rm = new RelationshipMetadata(field.getAnnotation(Relationship.class).type(),
+                                                                   field);
                 relationshipMetadata.put(rm.getType(), rm);
             }
             else
             {
                 Class cls = field.getType();
-                ClassMetadata classMetadata = metadataMap.get(cls);
-
-                if (classMetadata == null)
+                if (!Iterable.class.isAssignableFrom(cls) && !metadataMap.contains(cls))
                 {
-                    propertyMetadata.put(field.getName(), new PropertyMetadata(field));
+                    String fieldName = field.getName();
+                    PropertyMetadata pm = new PropertyMetadata(field);
+                    propertyMetadata.put(fieldName, pm);
+
+                    if (fieldName.equals("uuid") ||
+                        (field.isAnnotationPresent(Indexed.class) && field.getAnnotation(Indexed.class).unique() &&
+                         field.getAnnotation(Indexed.class).primary()))
+                    {
+                        this.primaryField = pm;
+                    }
                 }
                 else
                 {
@@ -69,15 +80,21 @@ public class ClassMetadata<T>
                 }
             }
         }
+
+        if (primaryField == null)
+        {
+            throw new IllegalStateException("No Primary Field was detected. A field called uuid or " +
+                                            "annotated with @Indexed(unique=true,primary=true) is required");
+        }
     }
 
 
     public SortedMultiLabel getLabelKey()
     {
-        return key;
+        return labelKey;
     }
 
-    public JSONObject toJsonObject(T entity)
+    public JSONObject toJsonObject(Object entity)
     {
         JSONObject result = new JSONObject();
 
@@ -87,6 +104,11 @@ public class ClassMetadata<T>
         }
 
         return result;
+    }
+
+    public PropertyMetadata getPrimaryField()
+    {
+        return primaryField;
     }
 
     public T createInstance(Map<String, Object> properties)

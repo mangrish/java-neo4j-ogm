@@ -66,4 +66,18 @@ public class PropertyMetadata
         }
 
     }
+
+    public Object getValue(Object ref)
+    {
+        Object o;
+        try
+        {
+            o = field.get(ref);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new RuntimeException("Could not access this field. Set this field to accessible");
+        }
+        return o;
+    }
 }

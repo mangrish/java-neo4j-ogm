@@ -13,4 +13,6 @@ import java.lang.annotation.Target;
 public @interface Indexed
 {
     boolean unique() default false;
+
+    boolean primary() default false;
 }
