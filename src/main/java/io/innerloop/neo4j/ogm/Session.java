@@ -130,7 +130,7 @@ public class Session
         }
 
         assertReadOnly(cypher);
-        Statement<Graph> statement = cypherMapper.query(cypher, parameters);
+        Statement<Graph> statement = cypherMapper.execute(cypher, parameters);
         Transaction txn = getTransaction();
 
         txn.add(statement);

@@ -95,7 +95,7 @@ public class EndToEndTests
         session.save(keanu);
         session.flush();
 
-        List<Actor> actors = session.loadAll(Actor.class);
+        List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
         assertEquals(1, actors.size());
         Actor a = actors.iterator().next();
         assertTrue(a.getName().equals("Keanu Reeves"));
@@ -108,6 +108,33 @@ public class EndToEndTests
         List<Role> roles = session.loadAll(Role.class);
 
         assertEquals(1, roles.size());
+
+        session.close();
+    }
+
+    @Test
+    public void testSaveDomainObjectsThenDelete() throws Neo4jClientException
+    {
+        Session session = sessionFactory.openSession();
+
+        Actor keanu = new Actor("Keanu Reeves");
+        Movie matrix = new Movie("Matrix", 1999);
+        keanu.playedIn(matrix,"Neo");
+
+        session.save(keanu);
+        session.flush();
+
+        session.delete(keanu);
+        session.flush();
+
+        List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
+        assertEquals(0, actors.size());
+        List<Movie> movies = session.loadAll(Movie.class);
+        assertEquals(1, movies.size());
+        List<Role> roles = session.loadAll(Role.class);
+        assertEquals(1, roles.size());
+        Role role = roles.iterator().next();
+        assertNull(role.getActor());
 
         session.close();
     }
