@@ -22,7 +22,8 @@ public class Actor
 
     private Set<Role> roles;
 
-    public Actor() {
+    public Actor()
+    {
         // do nothing...
     }
 
@@ -33,7 +34,7 @@ public class Actor
         this.roles = new HashSet<>();
     }
 
-    public Iterable<Role> getRoles()
+    public Set<Role> getRoles()
     {
         return roles;
     }
@@ -43,5 +44,10 @@ public class Actor
         final Role role = new Role(this, movie, roleName);
         roles.add(role);
         return role;
+    }
+
+    public String getName()
+    {
+        return name;
     }
 }

@@ -6,6 +6,7 @@ package io.innerloop.neo4j.ogm.models.basic;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.metadata.converters.UUIDConverter;
+import io.innerloop.neo4j.ogm.metadata.converters.YearConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
 import java.time.Year;
@@ -27,6 +28,7 @@ public class Movie
 
     List<Role> roles;
 
+    @Convert(YearConverter.class)
     private Year releaseDate;
 
     public Movie()

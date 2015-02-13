@@ -3,10 +3,13 @@ package io.innerloop.neo4j.ogm.mapping;
 import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.Statement;
+import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.metadata.RelationshipMetadata;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -66,27 +69,72 @@ public class CypherQueryMapper
                 if (edge != null)
                 {
                     // add a relationship statement for the ref and edge objects.
-                    ClassMetadata<?> edgeClassMetadata = metadataMap.get(edge);
-
-                    Statement<Graph> relationshipStatement = new GraphStatement("MATCH (a" +
-                                                                                classMetadata.getLabelKey().asCypher() +
-                                                                                "{" + classMetadata.getPrimaryField()
-                                                                                              .getName() +
-                                                                                ":{0}}), (b" +
-                                                                                edgeClassMetadata.getLabelKey()
-                                                                                        .asCypher() +
-                                                                                "{" +
-                                                                                edgeClassMetadata.getPrimaryField()
-                                                                                        .getName() +
-                                                                                ":{1}}) MERGE (a)-[r:" + rm.getType() +
-                                                                                "]->(b)");
-                    relationshipStatement.setParam("0", classMetadata.getPrimaryField().getValue(ref));
-                    relationshipStatement.setParam("1", edgeClassMetadata.getPrimaryField().getValue(ref));
-                    relationshipStatements.add(relationshipStatement);
-
-                    if (!visited.containsKey(edge))
+                    ClassMetadata<?> edgeClassMetadata;
+                    if (edge instanceof Iterable)
                     {
-                        toVisit.push(edge);
+                        Type type = rm.getField().getGenericType();
+                        if (!(type instanceof ParameterizedType))
+                        {
+                            throw new RuntimeException("Collection type must be parameterised.");
+                        }
+                        ParameterizedType returnType = (ParameterizedType) type;
+                        Type componentType = returnType.getActualTypeArguments()[0];
+
+                        edgeClassMetadata = metadataMap.get((Class)componentType);
+
+
+                        Iterable collection = (Iterable) edge;
+
+                        for (Object o: collection)
+                        {
+                            Statement<Graph> relationshipStatement = new GraphStatement("MATCH (a" +
+                                                                                        classMetadata.getLabelKey().asCypher() +
+                                                                                        "{" + classMetadata.getPrimaryField()
+                                                                                                      .getName() +
+                                                                                        ":{0}}), (b" +
+                                                                                        edgeClassMetadata.getLabelKey()
+                                                                                                .asCypher() +
+                                                                                        "{" +
+                                                                                        edgeClassMetadata.getPrimaryField()
+                                                                                                .getName() +
+                                                                                        ":{1}}) MERGE (a)-[r:" + rm.getType() +
+                                                                                        "]->(b)");
+                            relationshipStatement.setParam("0", classMetadata.getPrimaryField().getValue(ref));
+                            relationshipStatement.setParam("1", edgeClassMetadata.getPrimaryField().getValue(o));
+                            relationshipStatements.add(relationshipStatement);
+
+                            if (!visited.containsKey(o))
+                            {
+                                toVisit.push(o);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        edgeClassMetadata = metadataMap.get(edge);
+                        Statement<Graph> relationshipStatement = new GraphStatement("MATCH (a" +
+                                                                                    classMetadata.getLabelKey()
+                                                                                            .asCypher() +
+                                                                                    "{" +
+                                                                                    classMetadata.getPrimaryField()
+                                                                                            .getName() +
+                                                                                    ":{0}}), (b" +
+                                                                                    edgeClassMetadata.getLabelKey()
+                                                                                            .asCypher() +
+                                                                                    "{" +
+                                                                                    edgeClassMetadata.getPrimaryField()
+                                                                                            .getName() +
+                                                                                    ":{1}}) MERGE (a)-[r:" +
+                                                                                    rm.getType() +
+                                                                                    "]->(b)");
+                        relationshipStatement.setParam("0", classMetadata.getPrimaryField().getValue(ref));
+                        relationshipStatement.setParam("1", edgeClassMetadata.getPrimaryField().getValue(edge));
+                        relationshipStatements.add(relationshipStatement);
+
+                        if (!visited.containsKey(edge))
+                        {
+                            toVisit.push(edge);
+                        }
                     }
                 }
             }
@@ -124,18 +172,37 @@ public class CypherQueryMapper
         ClassMetadata<T> classMetadata = metadataMap.get(type);
 
         // Add the parent thing to save
-        String query = "MATCH (e" + classMetadata.getLabelKey().asCypher() + ")";
+        String query = "MATCH (a" + classMetadata.getLabelKey().asCypher() + ")";
+
+        int i = 1;
+        for (RelationshipMetadata rm : classMetadata.getRelationships())
+        {
+            query += " OPTIONAL MATCH (a)-[r" + i + ":" + rm.getType() + "]-() ";
+            query += "WITH a, COLLECT(r" + i + ") as r" + i;
+            for (int j = 1; j < i; j++)
+            {
+                query += ", r" + j;
+            }
+            i++;
+        }
+
 
         if (properties != null)
         {
-            query += "WHERE ";
+            query += " WHERE ";
             for (String key : properties.keySet())
             {
-                query += "e." + key + " = {" + key + "} ";
+                query += "a." + key + " = {" + key + "} ";
             }
         }
 
-        query += " RETURN e";
+        query += " RETURN a";
+
+        for (int j = 1; j < i; j++)
+        {
+            query += ", r" + j;
+        }
+
         Statement<Graph> statement = new GraphStatement(query);
 
         if (properties != null)
@@ -148,11 +215,6 @@ public class CypherQueryMapper
 
         return statement;
     }
-
-    //
-    //    merge.setParam("0", "abcd1234");
-    //    merge.setParam("1", new JSONObject(entity));
-    //    return merge;
 
     public <T> List<Statement> delete(T entity)
     {

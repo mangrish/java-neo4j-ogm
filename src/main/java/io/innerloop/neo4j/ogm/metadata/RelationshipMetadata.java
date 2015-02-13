@@ -22,7 +22,14 @@ public class RelationshipMetadata
 
     public <T> Object getValue(T entity)
     {
-        return null;
+        try
+        {
+            return field.get(entity);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new RuntimeException("Field is not accessible.", e);
+        }
     }
 
     public String getType()
@@ -42,6 +49,13 @@ public class RelationshipMetadata
 
     public void setValue(Object value, Object instance)
     {
-
+        try
+        {
+            field.set(instance, value);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new RuntimeException("Field is not accessible.", e);
+        }
     }
 }

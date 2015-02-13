@@ -21,6 +21,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by markangrish on 17/12/2014.
@@ -95,8 +96,18 @@ public class EndToEndTests
         session.flush();
 
         List<Actor> actors = session.loadAll(Actor.class);
-
         assertEquals(1, actors.size());
+        Actor a = actors.iterator().next();
+        assertTrue(a.getName().equals("Keanu Reeves"));
+        assertEquals(1, a.getRoles().size());
+
+        List<Movie> movies = session.loadAll(Movie.class);
+
+        assertEquals(1, movies.size());
+
+        List<Role> roles = session.loadAll(Role.class);
+
+        assertEquals(1, roles.size());
 
         session.close();
     }
