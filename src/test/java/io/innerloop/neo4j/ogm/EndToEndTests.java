@@ -93,7 +93,6 @@ public class EndToEndTests
         keanu.playedIn(matrix,"Neo");
 
         session.save(keanu);
-        session.flush();
 
         List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
         assertEquals(1, actors.size());
@@ -120,12 +119,8 @@ public class EndToEndTests
         Actor keanu = new Actor("Keanu Reeves");
         Movie matrix = new Movie("Matrix", 1999);
         keanu.playedIn(matrix,"Neo");
-
         session.save(keanu);
-        session.flush();
-
         session.delete(keanu);
-        session.flush();
 
         List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
         assertEquals(0, actors.size());

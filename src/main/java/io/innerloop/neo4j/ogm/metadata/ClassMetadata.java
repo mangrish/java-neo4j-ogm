@@ -40,7 +40,7 @@ public class ClassMetadata<T>
 
         for (Field field : Utils.getFields(type))
         {
-            if (Modifier.isTransient(field.getModifiers()) && Modifier.isStatic(field.getModifiers()))
+            if (Modifier.isTransient(field.getModifiers()) || Modifier.isStatic(field.getModifiers()))
             {
                 continue;
             }

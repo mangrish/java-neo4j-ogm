@@ -1,11 +1,6 @@
 package io.innerloop.neo4j.ogm.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Transient;
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtField;
-import javassist.NotFoundException;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 
@@ -13,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -21,8 +15,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MetadataMap
 {
-    private static AtomicBoolean classesEnhanced = new AtomicBoolean(false);
-
     private Map<Class<?>, ClassMetadata> lookupByClass;
 
     private Map<String, ClassMetadata<?>> lookupByLabel;
@@ -76,32 +68,13 @@ public class MetadataMap
             }
 
             String[] labelArray = labels.toArray(new String[labels.size()]);
-
-            if (labelArray.length == 1 && !classesEnhanced.get())
-            {
-                CtClass domainClass = null;
-                try
-                {
-                    domainClass = ClassPool.getDefault().get(cls.getName());
-                    CtField f = new CtField(CtClass.longType, "id", domainClass);
-                    domainClass.addField(f);
-                }
-                catch (NotFoundException | CannotCompileException e)
-                {
-                    throw new RuntimeException("Could not dynamically add an id field to class " + cls.getName() +
-                                               ". Make sure there is no field called \"id\" in this class.", e);
-                }
-            }
-
             SortedMultiLabel key = new SortedMultiLabel(labelArray);
             ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, classesToProcess, primaryLabel, key);
-
 
             lookupByLabel.put(primaryLabel, classMetadata);
             lookupByClass.put(cls, classMetadata);
             lookupBySortedMultiLabel.put(key, classMetadata);
         }
-        classesEnhanced.compareAndSet(false, true);
     }
 
     public ClassMetadata get(String label)
