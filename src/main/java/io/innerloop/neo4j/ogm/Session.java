@@ -51,8 +51,6 @@ public class Session
 
     private final GraphResultMapper graphResultMapper;
 
-    private Transaction activeTransaction;
-
     public Session(Neo4jClient client, CypherQueryMapper cypherMapper, GraphResultMapper graphResultMapper)
     {
         this.client = client;
@@ -65,55 +63,18 @@ public class Session
     public void close()
     {
         LOG.debug("Closing session on thread: [{}]", Thread.currentThread().getName());
-        Transaction txn = getTransaction();
-        try
-        {
-            txn.commit();
-        }
-        catch (Neo4jClientException e)
-        {
-            try
-            {
-                LOG.warn("Could not commit transaction on thread [{}]. Rolling back...",
-                         Thread.currentThread().getName());
-                txn.rollback();
-            }
-            catch (Neo4jClientException e1)
-            {
-                LOG.error("Could not rollback transaction on thread [{}].", Thread.currentThread().getName());
-            }
-        }
-        finally
-        {
-            txn.close();
-            sessions.remove();
-            activeTransaction = null;
-        }
+        sessions.remove();
     }
 
     public Transaction getTransaction()
     {
-        if (activeTransaction == null)
-        {
-            this.activeTransaction = client.getLongTransaction();
-            this.activeTransaction.begin();
-        }
-
-        return activeTransaction;
+        return client.getLongTransaction();
     }
 
     public void flush()
     {
         Transaction txn = getTransaction();
-
-        try
-        {
-            txn.flush();
-        }
-        catch (Neo4jClientException nce)
-        {
-            throw new RuntimeException("Encountered error when trying to flush database.", nce);
-        }
+        txn.flush();
     }
 
 
@@ -277,4 +238,6 @@ public class Session
             delete(element);
         }
     }
+
+
 }
