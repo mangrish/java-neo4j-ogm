@@ -44,6 +44,15 @@ public class ClassMetadata<T>
             {
                 continue;
             }
+            else if (field.getName().equals("id"))
+            {
+                if (!field.getType().equals(Long.class))
+                {
+                    throw new IllegalStateException("No id object with type Long found on object.");
+                }
+                PropertyMetadata pm = new PropertyMetadata(field);
+                propertyMetadata.put("id", pm);
+            }
             else if (field.isAnnotationPresent(Property.class) &&
                      Utils.isNotEmpty(field.getAnnotation(Property.class).name()))
             {
@@ -111,11 +120,15 @@ public class ClassMetadata<T>
         return primaryField;
     }
 
-    public T createInstance(Map<String, Object> properties)
+    public T createInstance(Long id, Map<String, Object> properties)
     {
         try
         {
             T instance = type.newInstance();
+
+            //TODO: could get rid of this if dirty updates dont need it
+            PropertyMetadata idPm = propertyMetadata.get("id");
+            idPm.setValue(id, instance);
 
             for (Map.Entry<String, Object> entry : properties.entrySet())
             {

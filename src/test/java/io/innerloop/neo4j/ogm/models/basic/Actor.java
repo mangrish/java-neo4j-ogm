@@ -15,6 +15,8 @@ import java.util.UUID;
 
 public class Actor
 {
+    private Long id;
+
     @Convert(UUIDConverter.class)
     private UUID uuid;
 

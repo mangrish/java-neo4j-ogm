@@ -12,6 +12,8 @@ import java.util.UUID;
 
 public class Role
 {
+    private Long id;
+
     @Convert(UUIDConverter.class)
     private UUID uuid;
 

@@ -90,57 +90,71 @@ public class EndToEndTests
     public void testSaveReachableDomainObjectsAndRelationships() throws Neo4jClientException
     {
         Session session = sessionFactory.openSession();
-        Transaction txn = session.getTransaction();
-        txn.begin();
+        try
+        {
+            Transaction txn = session.getTransaction();
+            txn.begin();
 
-        Actor keanu = new Actor("Keanu Reeves");
-        Movie matrix = new Movie("Matrix", 1999);
-        keanu.playedIn(matrix, "Neo");
+            Actor keanu = new Actor("Keanu Reeves");
+            Movie matrix = new Movie("Matrix", 1999);
+            keanu.playedIn(matrix, "Neo");
 
-        session.save(keanu);
+            session.save(keanu);
 
-        List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
-        assertEquals(1, actors.size());
-        Actor a = actors.iterator().next();
-        assertTrue(a.getName().equals("Keanu Reeves"));
-        assertEquals(1, a.getRoles().size());
+            List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
+            assertEquals(1, actors.size());
+            Actor a = actors.iterator().next();
+            assertTrue(a.getName().equals("Keanu Reeves"));
+            assertEquals(1, a.getRoles().size());
 
-        List<Movie> movies = session.loadAll(Movie.class);
+            List<Movie> movies = session.loadAll(Movie.class);
 
-        assertEquals(1, movies.size());
+            assertEquals(1, movies.size());
 
-        List<Role> roles = session.loadAll(Role.class);
+            List<Role> roles = session.loadAll(Role.class);
 
-        assertEquals(1, roles.size());
+            assertEquals(1, roles.size());
 
-        txn.commit();
-        session.close();
+            txn.commit();
+        }
+        finally
+        {
+            session.close();
+        }
     }
 
     @Test
     public void testSaveDomainObjectsThenDelete() throws Neo4jClientException
     {
         Session session = sessionFactory.openSession();
-        Transaction transaction = session.getTransaction();
-        transaction.begin();
+        try
+        {
 
-        Actor keanu = new Actor("Keanu Reeves");
-        Movie matrix = new Movie("Matrix", 1999);
-        keanu.playedIn(matrix,"Neo");
-        session.save(keanu);
-        session.delete(keanu);
+            Transaction transaction = session.getTransaction();
+            transaction.begin();
 
-        List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
-        assertEquals(0, actors.size());
-        List<Movie> movies = session.loadAll(Movie.class);
-        assertEquals(1, movies.size());
-        List<Role> roles = session.loadAll(Role.class);
-        assertEquals(1, roles.size());
-        Role role = roles.iterator().next();
-        assertNull(role.getActor());
+            Actor keanu = new Actor("Keanu Reeves");
+            Movie matrix = new Movie("Matrix", 1999);
+            keanu.playedIn(matrix, "Neo");
+            session.save(keanu);
+            session.delete(keanu);
 
-        transaction.commit();
-        session.close();
+            List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
+            assertEquals(0, actors.size());
+            List<Movie> movies = session.loadAll(Movie.class);
+            assertEquals(1, movies.size());
+            List<Role> roles = session.loadAll(Role.class);
+            assertEquals(1, roles.size());
+            Role role = roles.iterator().next();
+            assertNull(role.getActor());
+
+            transaction.commit();
+        }
+        finally
+        {
+            session.close();
+
+        }
 
     }
 
@@ -148,31 +162,33 @@ public class EndToEndTests
     public void testSaveLoadMutateThenSave() throws Neo4jClientException
     {
         Session session = sessionFactory.openSession();
-        Transaction txn1 = session.getTransaction();
-        txn1.begin();
+        try
+        {
+            Transaction txn1 = session.getTransaction();
+            txn1.begin();
 
-        Actor keanu = new Actor("Keanu Reeves");
-        Movie matrix = new Movie("Matrix", 1999);
-        keanu.playedIn(matrix,"Neo");
-        session.save(keanu);
-        txn1.commit();
+            Actor keanu = new Actor("Keanu Reeves");
+            Movie matrix = new Movie("Matrix", 1999);
+            keanu.playedIn(matrix, "Neo");
+            session.save(keanu);
 
-        Transaction txn2 = session.getTransaction();
-        txn2.begin();
+            List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
+            assertEquals(1, actors.size());
 
-        List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
-        assertEquals(1, actors.size());
+            Actor newKeanu = actors.iterator().next();
+            newKeanu.playedIn(new Movie("Bill and Ted's Excellent Adventure", 1986), "Bill");
+            session.save(newKeanu);
+            txn1.commit();
 
-        Actor newKeanu = actors.iterator().next();
-        newKeanu.playedIn(new Movie("Bill and Ted's Excellent Adventure", 1986), "Bill");
-        session.save(newKeanu);
-        txn2.commit();
-
-        Transaction txn3 = session.getTransaction();
-        txn3.begin();
-        Actor retrievedKeanu = session.load(Actor.class, "name", "Keanu Reeves");
-        assertEquals(2, retrievedKeanu.getRoles().size());
-        txn3.commit();
-        session.close();
+            Transaction txn2 = session.getTransaction();
+            txn2.begin();
+            Actor retrievedKeanu = session.load(Actor.class, "name", "Keanu Reeves");
+            assertEquals(2, retrievedKeanu.getRoles().size());
+            txn2.commit();
+        }
+        finally
+        {
+            session.close();
+        }
     }
 }

@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * Created by markangrish on 28/01/2015.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD})
+@Target(ElementType.TYPE)
 @Inherited
 public @interface Transient
 {

@@ -17,6 +17,8 @@ import java.util.UUID;
 
 public class Movie
 {
+    private Long id;
+
     @Convert(UUIDConverter.class)
     private UUID uuid;
 

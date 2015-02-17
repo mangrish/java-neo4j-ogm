@@ -93,11 +93,10 @@ public class Session
         assertReadOnly(cypher);
         Statement<Graph> statement = cypherMapper.execute(cypher, parameters);
         Transaction txn = getTransaction();
-
         txn.add(statement);
         flush();
         Graph graph = statement.getResult();
-        return graphResultMapper.map(type, graph);
+        return graphResultMapper.map(identityMap, type, graph);
     }
 
     private void assertReadOnly(String cypher)
@@ -157,7 +156,7 @@ public class Session
         flush();
         Graph graph = statement.getResult();
 
-        return graphResultMapper.map(type, graph);
+        return graphResultMapper.map(identityMap, type, graph);
 
     }
 

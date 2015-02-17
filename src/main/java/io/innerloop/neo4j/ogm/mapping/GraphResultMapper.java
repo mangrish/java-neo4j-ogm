@@ -28,9 +28,9 @@ public class GraphResultMapper
         this.metadataMap = metadataMap;
     }
 
-    public <T> List<T> map(Class<T> type, Graph graph)
+    public <T> List<T> map(Map<Long, Object> identityMap, Class<T> type, Graph graph)
     {
-        Map<Long, Object> seenObjects = new HashMap<>();
+        Map<Long,Object> newObjects = new HashMap<>();
         List<T> results = new ArrayList<>();
 
         for (Node node : graph.getNodes())
@@ -50,9 +50,16 @@ public class GraphResultMapper
                 throw new RuntimeException("No Metadata available for this label/s: [" + key + "]");
             }
 
-            Map<String, Object> properties = node.getProperties();
-            Object instance = clsMetadata.createInstance(properties);
-            seenObjects.put(node.getId(), instance);
+            Object instance = identityMap.get(node.getId());
+
+            if (instance == null)
+            {
+                Map<String, Object> properties = node.getProperties();
+                instance = clsMetadata.createInstance(node.getId(), properties);
+                identityMap.put(node.getId(), instance);
+                newObjects.put(node.getId(), instance);
+            }
+
 
             if (type.isAssignableFrom(instance.getClass()))
             {
@@ -62,8 +69,13 @@ public class GraphResultMapper
         }
         for (Relationship relationship : graph.getRelationships())
         {
-            Object start = seenObjects.get(relationship.getStartNodeId());
-            Object end = seenObjects.get(relationship.getEndNodeId());
+            Object start = newObjects.get(relationship.getStartNodeId());
+            Object end = newObjects.get(relationship.getEndNodeId());
+
+            if (start == null || end == null)
+            {
+                continue;
+            }
 
             try
             {
