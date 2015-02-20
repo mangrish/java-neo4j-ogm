@@ -1,4 +1,4 @@
-package io.innerloop.neo4j.ogm.metadata;
+package io.innerloop.neo4j.ogm.impl.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Transient;
 import org.reflections.Reflections;

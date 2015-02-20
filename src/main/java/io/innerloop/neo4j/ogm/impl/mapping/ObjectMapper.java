@@ -1,25 +1,6 @@
-package io.innerloop.neo4j.ogm.mapping;
+package io.innerloop.neo4j.ogm.impl.mapping;
 
-import io.innerloop.neo4j.client.Graph;
-import io.innerloop.neo4j.client.Node;
-import io.innerloop.neo4j.client.Relationship;
-import io.innerloop.neo4j.client.json.JSONObject;
-import io.innerloop.neo4j.ogm.annotations.Entity;
-import io.innerloop.neo4j.ogm.metadata.SortedMultiLabel;
-import org.reflections.Reflections;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import io.innerloop.neo4j.ogm.impl.metadata.SortedMultiLabel;
 
 /**
  * Created by markangrish on 19/12/2014.

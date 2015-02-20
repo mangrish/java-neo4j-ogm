@@ -1,9 +1,9 @@
 package io.innerloop.neo4j.ogm;
 
 import io.innerloop.neo4j.client.Neo4jClient;
-import io.innerloop.neo4j.ogm.mapping.CypherQueryMapper;
-import io.innerloop.neo4j.ogm.mapping.GraphResultMapper;
-import io.innerloop.neo4j.ogm.metadata.MetadataMap;
+import io.innerloop.neo4j.ogm.impl.mapping.CypherQueryMapper;
+import io.innerloop.neo4j.ogm.impl.mapping.GraphResultMapper;
+import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 
 /**
  * Created by markangrish on 18/12/2014.

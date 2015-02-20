@@ -4,10 +4,14 @@ import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.client.Transaction;
-import io.innerloop.neo4j.ogm.mapping.CypherQueryMapper;
-import io.innerloop.neo4j.ogm.mapping.GraphResultMapper;
-import io.innerloop.neo4j.ogm.metadata.ClassMetadata;
-import io.innerloop.neo4j.ogm.metadata.MetadataMap;
+import io.innerloop.neo4j.ogm.impl.DirtinessCheckingStrategy;
+import io.innerloop.neo4j.ogm.impl.UnitOfWork;
+import io.innerloop.neo4j.ogm.impl.mapping.CypherQueryMapper;
+import io.innerloop.neo4j.ogm.impl.mapping.GraphResultMapper;
+import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
+import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
+import io.innerloop.neo4j.ogm.impl.util.CollectionUtils;
+import io.innerloop.neo4j.ogm.impl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +94,7 @@ public class Session
 
     public <T> List<T> query(Class<T> type, String cypher, Map<String, Object> parameters)
     {
-        if (Utils.isEmpty(cypher))
+        if (StringUtils.isEmpty(cypher))
         {
             throw new RuntimeException("Supplied cypher statement must not be null or empty.");
         }
@@ -123,7 +127,7 @@ public class Session
     {
         Iterable<T> results = query(type, cypher, parameters);
 
-        int resultSize = Utils.size(results);
+        int resultSize = CollectionUtils.size(results);
 
         if (resultSize < 1)
         {
@@ -167,7 +171,7 @@ public class Session
     {
         Iterable<T> results = loadAll(type, properties);
 
-        int resultSize = Utils.size(results);
+        int resultSize = CollectionUtils.size(results);
 
         if (resultSize < 1)
         {

@@ -1,13 +1,13 @@
-package io.innerloop.neo4j.ogm.mapping;
+package io.innerloop.neo4j.ogm.impl.mapping;
 
 import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.RowSet;
 import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
-import io.innerloop.neo4j.ogm.metadata.ClassMetadata;
-import io.innerloop.neo4j.ogm.metadata.MetadataMap;
-import io.innerloop.neo4j.ogm.metadata.RelationshipMetadata;
+import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
+import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
+import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

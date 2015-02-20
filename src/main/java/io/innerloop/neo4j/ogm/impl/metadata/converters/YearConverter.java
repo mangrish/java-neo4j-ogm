@@ -1,4 +1,4 @@
-package io.innerloop.neo4j.ogm.metadata.converters;
+package io.innerloop.neo4j.ogm.impl.metadata.converters;
 
 
 import java.time.Year;

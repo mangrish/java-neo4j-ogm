@@ -1,11 +1,12 @@
-package io.innerloop.neo4j.ogm.metadata;
+package io.innerloop.neo4j.ogm.impl.metadata;
 
 import com.google.common.base.CaseFormat;
 import io.innerloop.neo4j.client.json.JSONObject;
-import io.innerloop.neo4j.ogm.Utils;
 import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.annotations.Property;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
+import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
+import io.innerloop.neo4j.ogm.impl.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -40,7 +41,7 @@ public class ClassMetadata<T>
         this.propertyMetadata = new HashMap<>();
         this.relationshipMetadata = new HashMap<>();
 
-        for (Field field : Utils.getFields(type))
+        for (Field field : ReflectionUtils.getFields(type))
         {
             if (Modifier.isTransient(field.getModifiers()) || Modifier.isStatic(field.getModifiers()))
             {
@@ -57,13 +58,13 @@ public class ClassMetadata<T>
                 this.neo4jIdField = pm;
             }
             else if (field.isAnnotationPresent(Property.class) &&
-                     Utils.isNotEmpty(field.getAnnotation(Property.class).name()))
+                     StringUtils.isNotEmpty(field.getAnnotation(Property.class).name()))
             {
                 PropertyMetadata pm = new PropertyMetadata(field.getAnnotation(Property.class).name(), field);
                 propertyMetadata.put(pm.getName(), pm);
             }
             else if (field.isAnnotationPresent(Relationship.class) &&
-                     Utils.isNotEmpty(field.getAnnotation(Relationship.class).type()))
+                     StringUtils.isNotEmpty(field.getAnnotation(Relationship.class).type()))
             {
                 RelationshipMetadata rm = new RelationshipMetadata(field.getAnnotation(Relationship.class).type(),
                                                                    field);

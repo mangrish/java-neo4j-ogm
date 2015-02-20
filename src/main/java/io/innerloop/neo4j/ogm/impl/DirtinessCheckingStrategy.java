@@ -1,6 +1,6 @@
-package io.innerloop.neo4j.ogm;
+package io.innerloop.neo4j.ogm.impl;
 
-import io.innerloop.neo4j.ogm.metadata.MetadataMap;
+import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 
 import java.util.Map;
 

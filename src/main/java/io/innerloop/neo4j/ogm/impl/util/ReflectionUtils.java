@@ -1,35 +1,15 @@
-package io.innerloop.neo4j.ogm;
+package io.innerloop.neo4j.ogm.impl.util;
 
 import com.google.common.collect.Lists;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
-public class Utils
+/**
+ * Created by markangrish on 20/02/2015.
+ */
+public class ReflectionUtils
 {
-
-    public static int size(Iterable<?> iterable)
-    {
-        return (iterable instanceof Collection) ? ((Collection<?>) iterable).size() : size(iterable.iterator());
-    }
-
-    public static int size(Iterator<?> iterator)
-    {
-        int count = 0;
-        while (iterator.hasNext())
-        {
-            iterator.next();
-            count++;
-        }
-        return count;
-    }
-
-    public static boolean isEmpty(String string)
-    {
-        return string == null || string.length() == 0;
-    }
 
     public static Field getField(Class clazz, String fieldName)
     {
@@ -64,7 +44,7 @@ public class Utils
             Field field = clazz.getDeclaredField(fieldName);
             field.setAccessible(true);
             Class<?> type = field.getType();
-//            Object convertedValue = convert(type, value);
+            //            Object convertedValue = convert(type, value);
             field.set(object, value);
         }
         catch (NoSuchFieldException | IllegalAccessException e)
@@ -77,10 +57,6 @@ public class Utils
         }
     }
 
-    public static boolean isNotEmpty(String string)
-    {
-        return string != null && string.length() > 0;
-    }
 
     public static Iterable<Field> getFields(Class<?> clazz)
     {

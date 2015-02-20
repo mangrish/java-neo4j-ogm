@@ -1,12 +1,12 @@
-package io.innerloop.neo4j.ogm.mapping;
+package io.innerloop.neo4j.ogm.impl.mapping;
 
 import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.Node;
 import io.innerloop.neo4j.client.Relationship;
-import io.innerloop.neo4j.ogm.metadata.ClassMetadata;
-import io.innerloop.neo4j.ogm.metadata.MetadataMap;
-import io.innerloop.neo4j.ogm.metadata.RelationshipMetadata;
-import io.innerloop.neo4j.ogm.metadata.SortedMultiLabel;
+import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
+import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
+import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
+import io.innerloop.neo4j.ogm.impl.metadata.SortedMultiLabel;
 
 import java.util.ArrayList;
 import java.util.Arrays;

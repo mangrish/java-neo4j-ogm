@@ -1,4 +1,4 @@
-package io.innerloop.neo4j.ogm;
+package io.innerloop.neo4j.ogm.impl;
 
 import java.util.List;
 import java.util.Map;
