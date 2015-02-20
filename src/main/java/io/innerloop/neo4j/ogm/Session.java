@@ -4,8 +4,6 @@ import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.client.Transaction;
-import io.innerloop.neo4j.ogm.impl.DirtinessCheckingStrategy;
-import io.innerloop.neo4j.ogm.impl.UnitOfWork;
 import io.innerloop.neo4j.ogm.impl.mapping.CypherQueryMapper;
 import io.innerloop.neo4j.ogm.impl.mapping.GraphResultMapper;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
@@ -15,6 +13,7 @@ import io.innerloop.neo4j.ogm.impl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -50,9 +49,11 @@ public class Session
 
     private final Map<Long, Object> identityMap;
 
-    private DirtinessCheckingStrategy dirtinessCheckingStrategy;
+    private final List<Object> deletableObjects;
 
-    private UnitOfWork unitOfWork;
+    private final List<Object> dirtyObjects;
+
+    private final List<Object> newObjects;
 
     private final Neo4jClient client;
 
@@ -70,7 +71,9 @@ public class Session
         this.identityMap = new HashMap<>();
         this.cypherMapper = new CypherQueryMapper(metadataMap);
         this.graphResultMapper = new GraphResultMapper(identityMap, metadataMap);
-        this.dirtinessCheckingStrategy = new DirtinessCheckingStrategy(identityMap, metadataMap);
+        this.deletableObjects = new ArrayList<>();
+        this.dirtyObjects = new ArrayList<>();
+        this.newObjects = new ArrayList<>();
     }
 
 
@@ -89,8 +92,31 @@ public class Session
     {
         Transaction txn = getTransaction();
         txn.flush();
+        newObjects.clear();
+        dirtyObjects.clear();
+        deletableObjects.clear();
     }
 
+    private List<Statement> prepareStatements()
+    {
+        List<Statement> statements = new ArrayList<>();
+
+        for (Object newObject : newObjects)
+        {
+            statements.addAll(cypherMapper.merge(newObject));
+        }
+        for (Object dirtyObject : dirtyObjects)
+        {
+            statements.addAll(cypherMapper.merge(dirtyObject));
+        }
+
+        for (Object deletableObject : deletableObjects)
+        {
+            statements.addAll(cypherMapper.delete(deletableObject));
+        }
+
+        return statements;
+    }
 
     public <T> List<T> query(Class<T> type, String cypher, Map<String, Object> parameters)
     {
@@ -107,6 +133,7 @@ public class Session
         assertReadOnly(cypher);
         Statement<Graph> statement = cypherMapper.execute(cypher, parameters);
         Transaction txn = getTransaction();
+        prepareStatements().forEach(txn::add);
         txn.add(statement);
         flush();
         Graph graph = statement.getResult();
@@ -159,6 +186,7 @@ public class Session
     {
         Statement<Graph> statement = cypherMapper.match(type, properties);
         Transaction txn = getTransaction();
+        prepareStatements().forEach(txn::add);
         txn.add(statement);
         flush();
         Graph graph = statement.getResult();
@@ -195,9 +223,6 @@ public class Session
 
     public <T> void save(T entity)
     {
-
-        identityMap.get(entity);
-
         if (entity.getClass().isArray())
         {
             saveAll(Arrays.asList(entity));
@@ -208,15 +233,19 @@ public class Session
         }
         else
         {
-            ClassMetadata<T> classMetadata = metadataMap.get(entity);
-            if (classMetadata.getNeo4jIdField().getValue(entity) == null)
+            ClassMetadata<T> metadata = metadataMap.get(entity);
+            Object id = metadata.getNeo4jIdField().getValue(entity);
+
+            if (id == null)
             {
-                // add it to a new objects map and get the id from the flush();
+                newObjects.add(entity);
             }
-            List<Statement> statements = cypherMapper.merge(entity);
-            Transaction txn = getTransaction();
-            statements.forEach(txn::add);
+            else
+            {
+                dirtyObjects.add(entity);
+            }
         }
+
     }
 
     private <T> void saveAll(Iterable<T> elements)
@@ -239,9 +268,17 @@ public class Session
         }
         else
         {
-            List<Statement> statements = cypherMapper.delete(entity);
-            Transaction txn = getTransaction();
-            statements.forEach(txn::add);
+            ClassMetadata<T> metadata = metadataMap.get(entity);
+            Object id = metadata.getNeo4jIdField().getValue(entity);
+
+            if (id == null)
+            {
+                newObjects.remove(entity);
+            }
+            else
+            {
+                deletableObjects.add(entity);
+            }
         }
     }
 

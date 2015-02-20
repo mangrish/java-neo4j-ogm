@@ -34,7 +34,6 @@ public class GraphResultMapper
 
     public <T> List<T> map(Class<T> type, Graph graph)
     {
-        Map<Long, Object> newObjects = new HashMap<>();
         List<T> results = new ArrayList<>();
 
         for (Node node : graph.getNodes())
@@ -61,7 +60,6 @@ public class GraphResultMapper
                 Map<String, Object> properties = node.getProperties();
                 instance = clsMetadata.createInstance(node.getId(), properties);
                 identityMap.put(node.getId(), instance);
-                newObjects.put(node.getId(), instance);
             }
 
 
@@ -73,13 +71,8 @@ public class GraphResultMapper
         }
         for (Relationship relationship : graph.getRelationships())
         {
-            Object start = newObjects.get(relationship.getStartNodeId());
-            Object end = newObjects.get(relationship.getEndNodeId());
-
-            if (start == null || end == null)
-            {
-                continue;
-            }
+            Object start = identityMap.get(relationship.getStartNodeId());
+            Object end = identityMap.get(relationship.getEndNodeId());
 
             try
             {
