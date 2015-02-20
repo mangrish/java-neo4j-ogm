@@ -15,22 +15,26 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by markangrish on 28/01/2015.
  */
 public class GraphResultMapper
 {
+    private final Map<Long, Object> identityMap;
+
     private final MetadataMap metadataMap;
 
-    public GraphResultMapper(MetadataMap metadataMap)
+    public GraphResultMapper(Map<Long, Object> identityMap, MetadataMap metadataMap)
     {
+        this.identityMap = identityMap;
         this.metadataMap = metadataMap;
     }
 
-    public <T> List<T> map(Map<Long, Object> identityMap, Class<T> type, Graph graph)
+    public <T> List<T> map(Class<T> type, Graph graph)
     {
-        Map<Long,Object> newObjects = new HashMap<>();
+        Map<Long, Object> newObjects = new HashMap<>();
         List<T> results = new ArrayList<>();
 
         for (Node node : graph.getNodes())
@@ -88,7 +92,14 @@ public class GraphResultMapper
                     Collection collection = (Collection) rm.getField().get(start);
                     if (collection == null)
                     {
-                        collection = new HashSet<>();
+                        if (Set.class.isAssignableFrom(rm.getField().getType()))
+                        {
+                            collection = new HashSet<>();
+                        }
+                        else if (List.class.isAssignableFrom(rm.getField().getType()))
+                        {
+                            collection = new ArrayList<>();
+                        }
                         rm.setValue(collection, start);
                     }
                     collection.add(end);

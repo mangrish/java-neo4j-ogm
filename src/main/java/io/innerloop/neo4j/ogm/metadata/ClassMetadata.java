@@ -3,7 +3,7 @@ package io.innerloop.neo4j.ogm.metadata;
 import com.google.common.base.CaseFormat;
 import io.innerloop.neo4j.client.json.JSONObject;
 import io.innerloop.neo4j.ogm.Utils;
-import io.innerloop.neo4j.ogm.annotations.Indexed;
+import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.annotations.Property;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 
@@ -30,6 +30,8 @@ public class ClassMetadata<T>
 
     private final Map<String, RelationshipMetadata> relationshipMetadata;
 
+    private PropertyMetadata neo4jIdField;
+
     public ClassMetadata(Class<T> type, List<Class<?>> metadataMap, String primaryLabel, SortedMultiLabel labelKey)
     {
         this.type = type;
@@ -52,6 +54,7 @@ public class ClassMetadata<T>
                 }
                 PropertyMetadata pm = new PropertyMetadata(field);
                 propertyMetadata.put("id", pm);
+                this.neo4jIdField = pm;
             }
             else if (field.isAnnotationPresent(Property.class) &&
                      Utils.isNotEmpty(field.getAnnotation(Property.class).name()))
@@ -75,10 +78,7 @@ public class ClassMetadata<T>
                     PropertyMetadata pm = new PropertyMetadata(field);
                     propertyMetadata.put(fieldName, pm);
 
-                    if (fieldName.equals("uuid") ||
-                        (field.isAnnotationPresent(Indexed.class) && field.getAnnotation(Indexed.class).unique() &&
-                         field.getAnnotation(Indexed.class).primary()))
-                    {
+                    if (fieldName.equals("uuid") || field.isAnnotationPresent(Id.class)) {
                         this.primaryField = pm;
                     }
                 }
@@ -93,7 +93,12 @@ public class ClassMetadata<T>
         if (primaryField == null)
         {
             throw new IllegalStateException("No Primary Field was detected. A field called uuid or " +
-                                            "annotated with @Indexed(unique=true,primary=true) is required");
+                                            "annotated with @Id is required");
+        }
+
+        if (neo4jIdField == null)
+        {
+            throw new IllegalStateException("No Neo4j Id was detected. A field called id of type Long is required");
         }
     }
 
@@ -152,5 +157,10 @@ public class ClassMetadata<T>
     public RelationshipMetadata getRelationship(String relationshipType)
     {
         return relationshipMetadata.get(relationshipType);
+    }
+
+    public PropertyMetadata getNeo4jIdField()
+    {
+        return neo4jIdField;
     }
 }

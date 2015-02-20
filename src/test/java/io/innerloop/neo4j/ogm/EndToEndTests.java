@@ -3,13 +3,19 @@ package io.innerloop.neo4j.ogm;
 import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Neo4jClientException;
 import io.innerloop.neo4j.client.Transaction;
-import io.innerloop.neo4j.ogm.models.basic.Actor;
-import io.innerloop.neo4j.ogm.models.basic.Movie;
-import io.innerloop.neo4j.ogm.models.basic.Role;
+import io.innerloop.neo4j.ogm.models.bike.Bike;
+import io.innerloop.neo4j.ogm.models.bike.Frame;
+import io.innerloop.neo4j.ogm.models.bike.Saddle;
+import io.innerloop.neo4j.ogm.models.bike.Wheel;
+import io.innerloop.neo4j.ogm.models.cineasts.Actor;
+import io.innerloop.neo4j.ogm.models.cineasts.Movie;
+import io.innerloop.neo4j.ogm.models.cineasts.Role;
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -18,9 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -31,7 +40,7 @@ public class EndToEndTests
 {
     private static final Logger LOG = LoggerFactory.getLogger(EndToEndTests.class);
 
-    private SessionFactory sessionFactory;
+    private Neo4jClient client;
 
     private CommunityNeoServer server;
 
@@ -57,8 +66,7 @@ public class EndToEndTests
         }
         LOG.info("Community Neo4j server started");
 
-        Neo4jClient client = new Neo4jClient("http://localhost:" + port + "/db/data");
-        sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.basic");
+        client = new Neo4jClient("http://localhost:" + port + "/db/data");
     }
 
     @After
@@ -77,6 +85,7 @@ public class EndToEndTests
     @Test
     public void testFindDomainObjectReturnsNull() throws Neo4jClientException
     {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
         Session session = sessionFactory.openSession();
         session.getTransaction().begin();
         // don't load anything into the database. Just look for it.
@@ -89,6 +98,7 @@ public class EndToEndTests
     @Test
     public void testSaveReachableDomainObjectsAndRelationships() throws Neo4jClientException
     {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
         Session session = sessionFactory.openSession();
         try
         {
@@ -126,6 +136,7 @@ public class EndToEndTests
     @Test
     public void testSaveDomainObjectsThenDelete() throws Neo4jClientException
     {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
         Session session = sessionFactory.openSession();
         try
         {
@@ -161,6 +172,7 @@ public class EndToEndTests
     @Test
     public void testSaveLoadMutateThenSave() throws Neo4jClientException
     {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
         Session session = sessionFactory.openSession();
         try
         {
@@ -185,6 +197,211 @@ public class EndToEndTests
             Actor retrievedKeanu = session.load(Actor.class, "name", "Keanu Reeves");
             assertEquals(2, retrievedKeanu.getRoles().size());
             txn2.commit();
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    @Test
+    public void canSimpleQueryDatabase() throws Neo4jClientException
+    {
+
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
+        Session session = sessionFactory.openSession();
+        try
+        {
+            Transaction transaction = session.getTransaction();
+            transaction.begin();
+            Saddle expected = new Saddle();
+            expected.setPrice(29.95);
+            expected.setMaterial("Leather");
+            Wheel frontWheel = new Wheel();
+            Wheel backWheel = new Wheel();
+            Bike bike = new Bike();
+            bike.setBrand("Huffy");
+            bike.setWheels(Arrays.asList(frontWheel, backWheel));
+            bike.setSaddle(expected);
+            session.save(bike);
+
+            HashMap<String, Object> parameters = new HashMap<>();
+            parameters.put("material", "Leather");
+            Saddle actual = session.queryForObject(Saddle.class,
+                                                   "MATCH (saddle:Saddle{material: {material}}) RETURN saddle",
+                                                   parameters);
+
+            assertEquals(expected.getUuid(), actual.getUuid());
+            assertEquals(expected.getMaterial(), actual.getMaterial());
+
+            HashMap<String, Object> parameters2 = new HashMap<>();
+            parameters2.put("brand", "Huffy");
+            Bike actual2 = session.queryForObject(Bike.class,
+                                                  "MATCH (bike:Bike{brand: {brand}}) RETURN bike",
+                                                  parameters2);
+
+            assertEquals(bike.getUuid(), actual2.getUuid());
+            assertEquals(bike.getBrand(), actual2.getBrand());
+            assertEquals(bike.getSaddle(), actual2.getSaddle());
+            assertEquals(bike.getWheels().size(), actual2.getWheels().size());
+
+            transaction.commit();
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+
+    @Test
+    public void canSimpleScalarQueryDatabase() throws Neo4jClientException
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
+        Session session = sessionFactory.openSession();
+        try
+        {
+            Transaction transaction = session.getTransaction();
+            transaction.begin();
+
+            Saddle expected = new Saddle();
+            expected.setPrice(29.95);
+            expected.setMaterial("Leather");
+            session.save(expected);
+
+            HashMap<String, Object> parameters = new HashMap<>();
+            parameters.put("material", "Leather");
+            int actual = session.queryForObject(Integer.class,
+                                                "MATCH (saddle:Saddle{material: {material}}) RETURN COUNT(saddle)",
+                                                parameters);
+
+            assertEquals(1, actual);
+            transaction.commit();
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    @Test
+    public void canComplexQueryDatabase() throws Neo4jClientException
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
+        Session session = sessionFactory.openSession();
+        try
+        {
+            Transaction transaction = session.getTransaction();
+            transaction.begin();
+            Saddle saddle = new Saddle();
+            saddle.setPrice(29.95);
+            saddle.setMaterial("Leather");
+            Wheel frontWheel = new Wheel();
+            Wheel backWheel = new Wheel();
+            Bike bike = new Bike();
+            bike.setBrand("Huffy");
+            bike.setWheels(Arrays.asList(frontWheel, backWheel));
+            bike.setSaddle(saddle);
+
+            session.save(bike);
+
+            HashMap<String, Object> parameters = new HashMap<>();
+            parameters.put("brand", "Huffy");
+            Bike actual = session.queryForObject(Bike.class,
+                                                 "MATCH (bike:Bike{brand:{brand}})-[rels]-() RETURN bike, COLLECT(DISTINCT rels) as rels",
+                                                 parameters);
+
+            assertEquals(bike.getUuid(), actual.getUuid());
+            assertEquals(bike.getBrand(), actual.getBrand());
+            assertEquals(bike.getWheels().size(), actual.getWheels().size());
+            assertNotNull(actual.getSaddle());
+            transaction.commit();
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    @Test
+    public void canComplexExecute() throws Neo4jClientException
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
+        Session session = sessionFactory.openSession();
+        try
+        {
+            Transaction transaction = session.getTransaction();
+            transaction.begin();
+            Saddle saddle = new Saddle();
+            saddle.setPrice(29.95);
+            saddle.setMaterial("Leather");
+            Wheel frontWheel = new Wheel();
+            Wheel backWheel = new Wheel();
+            Bike bike = new Bike();
+            bike.setBrand("Huffy");
+            bike.setWheels(Arrays.asList(frontWheel, backWheel));
+            bike.setSaddle(saddle);
+
+            session.save(bike);
+
+            Saddle newSaddle = new Saddle();
+            newSaddle.setPrice(19.95);
+            newSaddle.setMaterial("Vinyl");
+            bike.setSaddle(newSaddle);
+
+            session.save(bike);
+
+            HashMap<String, Object> parameters2 = new HashMap<>();
+            parameters2.put("brand", "Huffy");
+            Bike actual = session.queryForObject(Bike.class,
+                                                 "MATCH (bike:Bike{brand:{brand}})-[rels]-() RETURN bike, COLLECT(DISTINCT rels) as rels",
+                                                 parameters2);
+
+            assertEquals(bike.getUuid(), actual.getUuid());
+            assertEquals(bike.getBrand(), actual.getBrand());
+            assertEquals(bike.getWheels().size(), actual.getWheels().size());
+            assertEquals("Vinyl", actual.getSaddle().getMaterial());
+            transaction.commit();
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    @Test
+    public void canSaveNewObjectTreeToDatabase() throws Neo4jClientException
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
+        Session session = sessionFactory.openSession();
+        try
+        {
+            Transaction transaction = session.getTransaction();
+            transaction.begin();
+
+            Wheel frontWheel = new Wheel();
+            Wheel backWheel = new Wheel();
+            Bike bike = new Bike();
+
+            bike.setFrame(new Frame());
+            bike.setSaddle(new Saddle());
+            bike.setWheels(Arrays.asList(frontWheel, backWheel));
+
+            assertNull(frontWheel.getUuid());
+            assertNull(backWheel.getUuid());
+            assertNull(bike.getUuid());
+            assertNull(bike.getFrame().getUuid());
+            assertNull(bike.getSaddle().getUuid());
+
+            session.save(bike);
+
+            assertNotNull(frontWheel.getUuid());
+            assertNotNull(backWheel.getUuid());
+            assertNotNull(bike.getUuid());
+            assertNotNull(bike.getFrame().getUuid());
+            assertNotNull(bike.getSaddle().getUuid());
+
+            transaction.commit();
         }
         finally
         {

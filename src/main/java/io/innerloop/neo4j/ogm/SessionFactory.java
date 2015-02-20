@@ -12,20 +12,16 @@ public class SessionFactory
 {
     private final Neo4jClient client;
 
-    private final CypherQueryMapper cypherMapper;
-
-    private final GraphResultMapper graphResultMapper;
+    private final MetadataMap metadataMap;
 
     public SessionFactory(Neo4jClient client, String... packages)
     {
-        MetadataMap metadataMap = new MetadataMap(packages);
+        this.metadataMap = new MetadataMap(packages);
         this.client = client;
-        this.cypherMapper = new CypherQueryMapper(metadataMap);
-        this.graphResultMapper = new GraphResultMapper(metadataMap);
     }
 
     public Session openSession()
     {
-        return Session.getSession(client, cypherMapper, graphResultMapper);
+        return Session.getSession(client, metadataMap);
     }
 }

@@ -1,6 +1,7 @@
-package io.innerloop.neo4j.ogm.models.basic;
+package io.innerloop.neo4j.ogm.models.cineasts;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
+import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.metadata.converters.UUIDConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
@@ -14,6 +15,7 @@ public class Role
 {
     private Long id;
 
+    @Id
     @Convert(UUIDConverter.class)
     private UUID uuid;
 

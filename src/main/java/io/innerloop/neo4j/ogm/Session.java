@@ -2,11 +2,12 @@ package io.innerloop.neo4j.ogm;
 
 import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.Neo4jClient;
-import io.innerloop.neo4j.client.Neo4jClientException;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.client.Transaction;
 import io.innerloop.neo4j.ogm.mapping.CypherQueryMapper;
 import io.innerloop.neo4j.ogm.mapping.GraphResultMapper;
+import io.innerloop.neo4j.ogm.metadata.ClassMetadata;
+import io.innerloop.neo4j.ogm.metadata.MetadataMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,7 @@ public class Session
 
     private static ThreadLocal<Session> sessions = new ThreadLocal<>();
 
-    static Session getSession(Neo4jClient client, CypherQueryMapper cypherMapper, GraphResultMapper graphResultMapper)
+    static Session getSession(Neo4jClient client, MetadataMap metadataMap)
     {
         LOG.debug("Retrieving session for thread: [{}]", Thread.currentThread().getName());
         Session session = sessions.get();
@@ -36,7 +37,7 @@ public class Session
         if (session == null)
         {
             LOG.debug("No session found for thread [{}]. Creating new session.", Thread.currentThread().getName());
-            session = new Session(client, cypherMapper, graphResultMapper);
+            session = new Session(client, metadataMap);
             sessions.set(session);
         }
 
@@ -45,18 +46,27 @@ public class Session
 
     private final Map<Long, Object> identityMap;
 
+    private DirtinessCheckingStrategy dirtinessCheckingStrategy;
+
+    private UnitOfWork unitOfWork;
+
     private final Neo4jClient client;
+
+    private final MetadataMap metadataMap;
 
     private final CypherQueryMapper cypherMapper;
 
     private final GraphResultMapper graphResultMapper;
 
-    public Session(Neo4jClient client, CypherQueryMapper cypherMapper, GraphResultMapper graphResultMapper)
+
+    public Session(Neo4jClient client, MetadataMap metadataMap)
     {
         this.client = client;
-        this.cypherMapper = cypherMapper;
-        this.graphResultMapper = graphResultMapper;
+        this.metadataMap = metadataMap;
         this.identityMap = new HashMap<>();
+        this.cypherMapper = new CypherQueryMapper(metadataMap);
+        this.graphResultMapper = new GraphResultMapper(identityMap, metadataMap);
+        this.dirtinessCheckingStrategy = new DirtinessCheckingStrategy(identityMap, metadataMap);
     }
 
 
@@ -96,7 +106,7 @@ public class Session
         txn.add(statement);
         flush();
         Graph graph = statement.getResult();
-        return graphResultMapper.map(identityMap, type, graph);
+        return graphResultMapper.map(type, graph);
     }
 
     private void assertReadOnly(String cypher)
@@ -128,13 +138,6 @@ public class Session
         return results.iterator().next();
     }
 
-    public void execute(String cypher, Map<String, Object> parameters)
-    {
-        Statement<Graph> statement = cypherMapper.execute(cypher, parameters);
-        Transaction txn = getTransaction();
-        txn.add(statement);
-    }
-
 
     public <T> List<T> loadAll(Class<T> type)
     {
@@ -156,7 +159,7 @@ public class Session
         flush();
         Graph graph = statement.getResult();
 
-        return graphResultMapper.map(identityMap, type, graph);
+        return graphResultMapper.map(type, graph);
 
     }
 
@@ -188,6 +191,9 @@ public class Session
 
     public <T> void save(T entity)
     {
+
+        identityMap.get(entity);
+
         if (entity.getClass().isArray())
         {
             saveAll(Arrays.asList(entity));
@@ -198,6 +204,11 @@ public class Session
         }
         else
         {
+            ClassMetadata<T> classMetadata = metadataMap.get(entity);
+            if (classMetadata.getNeo4jIdField().getValue(entity) == null)
+            {
+                // add it to a new objects map and get the id from the flush();
+            }
             List<Statement> statements = cypherMapper.merge(entity);
             Transaction txn = getTransaction();
             statements.forEach(txn::add);

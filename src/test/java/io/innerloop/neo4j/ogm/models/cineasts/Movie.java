@@ -1,10 +1,11 @@
-package io.innerloop.neo4j.ogm.models.basic;
+package io.innerloop.neo4j.ogm.models.cineasts;
 
 /**
  * Created by markangrish on 17/12/2014.
  */
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
+import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.metadata.converters.UUIDConverter;
 import io.innerloop.neo4j.ogm.metadata.converters.YearConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
@@ -19,6 +20,7 @@ public class Movie
 {
     private Long id;
 
+    @Id
     @Convert(UUIDConverter.class)
     private UUID uuid;
 

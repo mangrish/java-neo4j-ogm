@@ -2,6 +2,8 @@ package io.innerloop.neo4j.ogm.mapping;
 
 import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.GraphStatement;
+import io.innerloop.neo4j.client.RowSet;
+import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.ogm.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.metadata.MetadataMap;
@@ -52,9 +54,9 @@ public class CypherQueryMapper
             // add a merge statement for this object.
             ClassMetadata<?> classMetadata = metadataMap.get(ref);
 
-            Statement<Graph> nodeStatement = new GraphStatement("MERGE (e" + classMetadata.getLabelKey().asCypher() +
-                                                                "{" + classMetadata.getPrimaryField().getName() +
-                                                                ":{0}}) SET e = {1}");
+            Statement<RowSet> nodeStatement = new RowStatement("MERGE (e" + classMetadata.getLabelKey().asCypher() +
+                                                               "{" + classMetadata.getPrimaryField().getName() +
+                                                               ":{0}}) SET e = {1} RETURN id(e)");
             nodeStatement.setParam("0", classMetadata.getPrimaryField().getValue(ref));
             nodeStatement.setParam("1", classMetadata.toJsonObject(ref));
             nodeStatements.add(nodeStatement);
@@ -123,7 +125,7 @@ public class CypherQueryMapper
                                           Object edge,
                                           ClassMetadata<?> edgeClassMetadata)
     {
-        Statement<Graph> relationshipStatement = new GraphStatement("MATCH (a" +
+        Statement<RowSet> relationshipStatement = new RowStatement("MATCH (a" +
                                                                     classMetadata.getLabelKey().asCypher() +
                                                                     "{" +
                                                                     classMetadata.getPrimaryField().getName() +
@@ -147,15 +149,6 @@ public class CypherQueryMapper
 
     public Statement<Graph> execute(String cypher, Map<String, Object> parameters)
     {
-        if (parameters != null)
-        {
-            cypher += " WHERE ";
-            for (String key : parameters.keySet())
-            {
-                cypher += "a." + key + " = {" + key + "} ";
-            }
-        }
-
         Statement<Graph> statement = new GraphStatement(cypher);
 
         if (parameters != null)
@@ -192,9 +185,15 @@ public class CypherQueryMapper
         if (parameters != null)
         {
             query += " WHERE ";
+            int numParams = parameters.size();
             for (String key : parameters.keySet())
             {
-                query += "a." + key + " = {" + key + "} ";
+                query += "a." + key + " = {" + key + "}";
+
+                if (--numParams > 0)
+                {
+                    query += ", ";
+                }
             }
         }
 

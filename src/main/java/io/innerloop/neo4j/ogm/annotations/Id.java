@@ -6,11 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by markangrish on 07/11/2014.
+ * Created by markangrish on 17/02/2015.
  */
 @Target(value = ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Indexed
+public @interface Id
 {
-    boolean unique() default false;
 }
