@@ -16,7 +16,8 @@ import java.util.Map;
  */
 public class MetadataMap
 {
-    public static boolean isInnerClass(Class<?> clazz) {
+    public static boolean isInnerClass(Class<?> clazz)
+    {
         return clazz.isMemberClass() && !Modifier.isStatic(clazz.getModifiers());
     }
 
@@ -43,7 +44,8 @@ public class MetadataMap
                 Class<?> aClass = Class.forName(type);
 
                 if (aClass.isAnnotationPresent(Transient.class) || aClass.isInterface() || aClass.isAnnotation() ||
-                    aClass.isEnum() || isInnerClass(aClass) || Throwable.class.isAssignableFrom(aClass))
+                    aClass.isEnum() || isInnerClass(aClass) || aClass.isMemberClass() ||
+                    Throwable.class.isAssignableFrom(aClass))
                 {
                     continue;
                 }
