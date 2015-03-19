@@ -44,7 +44,8 @@ public class MetadataMap
                 Class<?> aClass = Class.forName(type);
 
                 if (aClass.isAnnotationPresent(Transient.class) || aClass.isInterface() || aClass.isAnnotation() ||
-                    aClass.isEnum() || isInnerClass(aClass) || aClass.isMemberClass() ||
+                    aClass.isEnum() || isInnerClass(aClass) || aClass.isMemberClass() || aClass.isAnonymousClass() ||
+                    aClass.isLocalClass() ||
                     Throwable.class.isAssignableFrom(aClass))
                 {
                     continue;
