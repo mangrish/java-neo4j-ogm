@@ -4,6 +4,7 @@ import io.innerloop.neo4j.ogm.annotations.Transient;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +16,10 @@ import java.util.Map;
  */
 public class MetadataMap
 {
+    public static boolean isInnerClass(Class<?> clazz) {
+        return clazz.isMemberClass() && !Modifier.isStatic(clazz.getModifiers());
+    }
+
     private Map<Class<?>, ClassMetadata> lookupByClass;
 
     private Map<String, ClassMetadata<?>> lookupByLabel;
@@ -38,7 +43,7 @@ public class MetadataMap
                 Class<?> aClass = Class.forName(type);
 
                 if (aClass.isAnnotationPresent(Transient.class) || aClass.isInterface() || aClass.isAnnotation() ||
-                    aClass.isEnum() || Throwable.class.isAssignableFrom(aClass))
+                    aClass.isEnum() || isInnerClass(aClass) || Throwable.class.isAssignableFrom(aClass))
                 {
                     continue;
                 }
