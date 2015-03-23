@@ -225,6 +225,39 @@ public class EndToEndTests
         }
     }
 
+
+    @Test
+    public void testDirtyUpdate() throws Neo4jClientException
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
+        Session session = sessionFactory.openSession();
+        Transaction txn1 = session.getTransaction();
+        try
+        {
+            txn1.begin();
+
+            Actor keanu = new Actor("Keanu Reeves");
+            Movie matrix = new Movie("Matrix", 1999);
+            keanu.playedIn(matrix, "Neo");
+            session.save(keanu);
+
+            List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
+            assertEquals(1, actors.size());
+
+            keanu.setName("KeanuNuNu Reeves");
+            keanu.playedIn(new Movie("Bill and Ted's Excellent Adventure", 1986), "Bill");
+            session.save(keanu);
+
+            Actor fakeKeanu = session.load(Actor.class, "name", "KeanuNuNu Reeves");
+            assertEquals(2, fakeKeanu.getRoles().size());
+            assertTrue(keanu == fakeKeanu);
+        }
+        finally
+        {
+            txn1.commit();
+        }
+    }
+
     @Test
     public void canSimpleQueryDatabase() throws Neo4jClientException
     {
