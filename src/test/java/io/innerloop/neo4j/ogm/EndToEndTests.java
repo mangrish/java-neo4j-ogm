@@ -290,7 +290,7 @@ public class EndToEndTests
 
             HashMap<String, Object> parameters = new HashMap<>();
             parameters.put("material", "Leather");
-            int actual = session.queryForObject(Integer.class,
+            int actual = session.queryForObject(int.class,
                                                 "MATCH (saddle:Saddle{material: {material}}) RETURN COUNT(saddle)",
                                                 parameters);
 

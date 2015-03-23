@@ -158,6 +158,34 @@ public class Session
 
         if (resultSize < 1)
         {
+            if (byte.class.isAssignableFrom(type))
+            {
+                return (T) Byte.valueOf((byte) 0);
+            }
+            else if (short.class.isAssignableFrom(type))
+            {
+                return (T) Short.valueOf((short)0);
+            }
+            else if (int.class.isAssignableFrom(type))
+            {
+                return (T) Integer.valueOf(0);
+            }
+            else if (long.class.isAssignableFrom(type))
+            {
+                return (T) Long.valueOf(0L);
+            }
+            else if (float.class.isAssignableFrom(type))
+            {
+                return (T) Float.valueOf(0F);
+            }
+            else if (double.class.isAssignableFrom(type))
+            {
+                return (T) Double.valueOf(0D);
+            }
+            else if (char.class.isAssignableFrom(type))
+            {
+                return (T) Character.valueOf('\u0000');
+            }
             return null;
         }
 
