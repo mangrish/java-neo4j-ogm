@@ -34,12 +34,12 @@ public class Session
 
     static Session getSession(Neo4jClient client, MetadataMap metadataMap)
     {
-        LOG.debug("Retrieving session for thread: [{}]", Thread.currentThread().getName());
+        LOG.trace("Retrieving session for thread: [{}]", Thread.currentThread().getName());
         Session session = sessions.get();
 
         if (session == null)
         {
-            LOG.debug("No session found for thread [{}]. Creating new session.", Thread.currentThread().getName());
+            LOG.debug("No session found for thread [{}]. Creating new session for this thread.", Thread.currentThread().getName());
             session = new Session(client, metadataMap);
             sessions.set(session);
         }
