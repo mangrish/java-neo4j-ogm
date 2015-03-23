@@ -1,13 +1,17 @@
 package io.innerloop.neo4j.ogm;
 
+import com.google.common.primitives.Primitives;
 import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.Neo4jClient;
+import io.innerloop.neo4j.client.RowSet;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.client.Transaction;
 import io.innerloop.neo4j.ogm.impl.mapping.CypherQueryMapper;
 import io.innerloop.neo4j.ogm.impl.mapping.GraphResultMapper;
+import io.innerloop.neo4j.ogm.impl.mapping.IdentityMap;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
+import io.innerloop.neo4j.ogm.impl.metadata.PropertyMetadata;
 import io.innerloop.neo4j.ogm.impl.util.CollectionUtils;
 import io.innerloop.neo4j.ogm.impl.util.StringUtils;
 import org.slf4j.Logger;
@@ -39,7 +43,8 @@ public class Session
 
         if (session == null)
         {
-            LOG.debug("No session found for thread [{}]. Creating new session for this thread.", Thread.currentThread().getName());
+            LOG.debug("No session found for thread [{}]. Creating new session for this thread.",
+                      Thread.currentThread().getName());
             session = new Session(client, metadataMap);
             sessions.set(session);
         }
@@ -47,13 +52,11 @@ public class Session
         return session;
     }
 
-    private final Map<Long, Object> identityMap;
-
-    private final List<Object> deletableObjects;
-
-    private final List<Object> dirtyObjects;
+    private final IdentityMap identityMap;
 
     private final List<Object> newObjects;
+
+    private final List<Object> deletedObjects;
 
     private final Neo4jClient client;
 
@@ -68,12 +71,11 @@ public class Session
     {
         this.client = client;
         this.metadataMap = metadataMap;
-        this.identityMap = new HashMap<>();
-        this.cypherMapper = new CypherQueryMapper(metadataMap);
+        this.identityMap = new IdentityMap(metadataMap);
+        this.cypherMapper = new CypherQueryMapper(identityMap, metadataMap);
         this.graphResultMapper = new GraphResultMapper(identityMap, metadataMap);
-        this.deletableObjects = new ArrayList<>();
-        this.dirtyObjects = new ArrayList<>();
         this.newObjects = new ArrayList<>();
+        this.deletedObjects = new ArrayList<>();
     }
 
 
@@ -90,32 +92,39 @@ public class Session
 
     public void flush()
     {
-        Transaction txn = getTransaction();
-        txn.flush();
-        newObjects.clear();
-        dirtyObjects.clear();
-        deletableObjects.clear();
+        flush(null);
     }
 
-    private List<Statement> prepareStatements()
+    private void flush(Statement statement)
     {
+        Transaction txn = getTransaction();
         List<Statement> statements = new ArrayList<>();
 
         for (Object newObject : newObjects)
         {
-            statements.addAll(cypherMapper.merge(newObject));
+            List<Statement> newStatements = cypherMapper.merge(newObject);
+            statements.addAll(newStatements);
         }
-        for (Object dirtyObject : dirtyObjects)
+
+        for (Object dirtyObject : identityMap.getDirtyObjects())
         {
             statements.addAll(cypherMapper.merge(dirtyObject));
         }
 
-        for (Object deletableObject : deletableObjects)
+        for (Object deletedObject : deletedObjects)
         {
-            statements.addAll(cypherMapper.delete(deletableObject));
+            statements.addAll(cypherMapper.delete(deletedObject));
         }
 
-        return statements;
+        if (statement != null)
+        {
+            statements.add(statement);
+        }
+
+        statements.forEach(txn::add);
+        txn.flush();
+        identityMap.refresh();
+        newObjects.clear();
     }
 
     public <T> List<T> query(Class<T> type, String cypher, Map<String, Object> parameters)
@@ -131,13 +140,28 @@ public class Session
         }
 
         assertReadOnly(cypher);
-        Statement<Graph> statement = cypherMapper.execute(cypher, parameters);
-        Transaction txn = getTransaction();
-        prepareStatements().forEach(txn::add);
-        txn.add(statement);
-        flush();
-        Graph graph = statement.getResult();
-        return graphResultMapper.map(type, graph);
+
+
+        if (Primitives.isWrapperType(type))
+        {
+            Statement<RowSet> statement = cypherMapper.executeRowSet(cypher, parameters);
+            flush(statement);
+            RowSet rs = statement.getResult();
+            ArrayList<T> result = new ArrayList<>();
+            while (rs.hasNext())
+            {
+                result.add((T)rs.next()[0]);
+            }
+            return result;
+        }
+        else
+        {
+            Statement<Graph> statement = cypherMapper.executeGraph(cypher, parameters);
+            flush(statement);
+            Graph graph = statement.getResult();
+            return graphResultMapper.map(type, graph);
+        }
+
     }
 
     private void assertReadOnly(String cypher)
@@ -164,7 +188,7 @@ public class Session
             }
             else if (short.class.isAssignableFrom(type))
             {
-                return (T) Short.valueOf((short)0);
+                return (T) Short.valueOf((short) 0);
             }
             else if (int.class.isAssignableFrom(type))
             {
@@ -213,10 +237,7 @@ public class Session
     public <T> List<T> loadAll(Class<T> type, Map<String, Object> properties)
     {
         Statement<Graph> statement = cypherMapper.match(type, properties);
-        Transaction txn = getTransaction();
-        prepareStatements().forEach(txn::add);
-        txn.add(statement);
-        flush();
+        flush(statement);
         Graph graph = statement.getResult();
 
         return graphResultMapper.map(type, graph);
@@ -262,15 +283,10 @@ public class Session
         else
         {
             ClassMetadata<T> metadata = metadataMap.get(entity);
-            Object id = metadata.getNeo4jIdField().getValue(entity);
-
-            if (id == null)
+            Object neo4jId = metadata.getNeo4jIdField().getValue(entity);
+            if (neo4jId == null)
             {
                 newObjects.add(entity);
-            }
-            else
-            {
-                dirtyObjects.add(entity);
             }
         }
 
@@ -305,7 +321,7 @@ public class Session
             }
             else
             {
-                deletableObjects.add(entity);
+                deletedObjects.add(entity);
             }
         }
     }
@@ -317,6 +333,4 @@ public class Session
             delete(element);
         }
     }
-
-
 }

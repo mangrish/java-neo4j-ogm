@@ -19,6 +19,20 @@ import java.util.Map;
  */
 public class ClassMetadata<T>
 {
+    private static final long HASH_SEED = 0xDEADBEEF / (11 * 257);
+
+    private static long hash(String string)
+    {
+        long h = 1125899906842597L; // prime
+        int len = string.length();
+
+        for (int i = 0; i < len; i++)
+        {
+            h = 31 * h + string.charAt(i);
+        }
+        return h;
+    }
+
     private final Class<T> type;
 
     private PropertyMetadata primaryField;
@@ -79,7 +93,8 @@ public class ClassMetadata<T>
                     PropertyMetadata pm = new PropertyMetadata(field);
                     propertyMetadata.put(fieldName, pm);
 
-                    if (fieldName.equals("uuid") || field.isAnnotationPresent(Id.class)) {
+                    if (fieldName.equals("uuid") || field.isAnnotationPresent(Id.class))
+                    {
                         this.primaryField = pm;
                     }
                 }
@@ -163,5 +178,21 @@ public class ClassMetadata<T>
     public PropertyMetadata getNeo4jIdField()
     {
         return neo4jIdField;
+    }
+
+    public long hash(T object)
+    {
+
+        long hash = HASH_SEED;
+        for (PropertyMetadata metadata : propertyMetadata.values())
+        {
+            Object value = metadata.getValue(object);
+            if (value != null)
+            {
+                hash = hash * 31L + hash(value.toString());
+            }
+        }
+
+        return hash;
     }
 }

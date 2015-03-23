@@ -1,5 +1,6 @@
 package io.innerloop.neo4j.ogm.impl.mapping;
 
+import com.sun.rowset.internal.Row;
 import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.RowSet;
@@ -22,10 +23,13 @@ import java.util.Stack;
  */
 public class CypherQueryMapper
 {
+    private final IdentityMap identityMap;
+
     private final MetadataMap metadataMap;
 
-    public CypherQueryMapper(MetadataMap metadataMap)
+    public CypherQueryMapper(IdentityMap identityMap, MetadataMap metadataMap)
     {
+        this.identityMap = identityMap;
         this.metadataMap = metadataMap;
     }
 
@@ -60,6 +64,13 @@ public class CypherQueryMapper
             nodeStatement.setParam("0", classMetadata.getPrimaryField().getValue(ref));
             nodeStatement.setParam("1", classMetadata.toJsonObject(ref));
             nodeStatements.add(nodeStatement);
+
+            Object neo4jIdVal = classMetadata.getNeo4jIdField().getValue(ref);
+
+            if (neo4jIdVal == null)
+            {
+                identityMap.addNew(ref, nodeStatement);
+            }
 
             visited.put(ref, ref);
 
@@ -147,9 +158,24 @@ public class CypherQueryMapper
     }
 
 
-    public Statement<Graph> execute(String cypher, Map<String, Object> parameters)
+    public Statement<Graph> executeGraph(String cypher, Map<String, Object> parameters)
     {
         Statement<Graph> statement = new GraphStatement(cypher);
+
+        if (parameters != null)
+        {
+            for (Map.Entry<String, Object> entry : parameters.entrySet())
+            {
+                statement.setParam(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return statement;
+    }
+
+    public Statement<RowSet> executeRowSet(String cypher, Map<String, Object> parameters)
+    {
+        Statement<RowSet> statement = new RowStatement(cypher);
 
         if (parameters != null)
         {

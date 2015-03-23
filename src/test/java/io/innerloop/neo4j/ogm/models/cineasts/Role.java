@@ -2,7 +2,7 @@ package io.innerloop.neo4j.ogm.models.cineasts;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.annotations.Id;
-import io.innerloop.neo4j.ogm.impl.metadata.converters.UUIDConverter;
+import io.innerloop.neo4j.ogm.converters.UUIDConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
 import java.util.UUID;

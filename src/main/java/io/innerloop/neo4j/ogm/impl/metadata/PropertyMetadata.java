@@ -1,7 +1,7 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
-import io.innerloop.neo4j.ogm.impl.metadata.converters.Converter;
+import io.innerloop.neo4j.ogm.converters.Converter;
 
 import java.lang.reflect.Field;
 

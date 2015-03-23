@@ -165,6 +165,7 @@ public class EndToEndTests
             List<Role> roles = session.loadAll(Role.class);
             assertEquals(1, roles.size());
             Role role = roles.iterator().next();
+            //TODO: to fix this requires disconnecting the attached objects. the database seems like it has deleted the object.
             assertNull(role.getActor());
 
         }
@@ -289,12 +290,12 @@ public class EndToEndTests
             session.save(expected);
 
             HashMap<String, Object> parameters = new HashMap<>();
-            parameters.put("material", "Leather");
-            int actual = session.queryForObject(int.class,
-                                                "MATCH (saddle:Saddle{material: {material}}) RETURN COUNT(saddle)",
+            parameters.put("material", expected.getMaterial());
+            Integer actual = session.queryForObject(Integer.class,
+                                                "MATCH (saddle:Saddle{material:{material}}) RETURN COUNT(saddle)",
                                                 parameters);
 
-            assertEquals(1, actual);
+            assertEquals(1, actual.intValue());
         }
         finally
         {
@@ -406,20 +407,20 @@ public class EndToEndTests
             bike.setSaddle(new Saddle());
             bike.setWheels(Arrays.asList(frontWheel, backWheel));
 
-            assertNull(frontWheel.getUuid());
-            assertNull(backWheel.getUuid());
-            assertNull(bike.getUuid());
-            assertNull(bike.getFrame().getUuid());
-            assertNull(bike.getSaddle().getUuid());
+            assertNull(frontWheel.id);
+            assertNull(backWheel.id);
+            assertNull(bike.id);
+            assertNull(bike.getFrame().id);
+            assertNull(bike.getSaddle().id);
 
             session.save(bike);
-            transaction.flush();
+            session.flush();
 
-            assertNotNull(frontWheel.getUuid());
-            assertNotNull(backWheel.getUuid());
-            assertNotNull(bike.getUuid());
-            assertNotNull(bike.getFrame().getUuid());
-            assertNotNull(bike.getSaddle().getUuid());
+            assertNotNull(frontWheel.id);
+            assertNotNull(backWheel.id);
+            assertNotNull(bike.id);
+            assertNotNull(bike.getFrame().id);
+            assertNotNull(bike.getSaddle().id);
 
         }
         finally

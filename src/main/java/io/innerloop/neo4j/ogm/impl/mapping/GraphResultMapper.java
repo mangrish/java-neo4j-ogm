@@ -22,11 +22,11 @@ import java.util.Set;
  */
 public class GraphResultMapper
 {
-    private final Map<Long, Object> identityMap;
+    private final IdentityMap identityMap;
 
     private final MetadataMap metadataMap;
 
-    public GraphResultMapper(Map<Long, Object> identityMap, MetadataMap metadataMap)
+    public GraphResultMapper(IdentityMap identityMap, MetadataMap metadataMap)
     {
         this.identityMap = identityMap;
         this.metadataMap = metadataMap;
@@ -62,7 +62,6 @@ public class GraphResultMapper
                 identityMap.put(node.getId(), instance);
             }
 
-
             if (type.isAssignableFrom(instance.getClass()))
             {
                 results.add((T) instance);
@@ -73,6 +72,11 @@ public class GraphResultMapper
         {
             Object start = identityMap.get(relationship.getStartNodeId());
             Object end = identityMap.get(relationship.getEndNodeId());
+
+            if (start != null)
+            {
+                continue;
+            }
 
             try
             {
@@ -89,10 +93,11 @@ public class GraphResultMapper
                         {
                             collection = new HashSet<>();
                         }
-                        else if (List.class.isAssignableFrom(rm.getField().getType()))
+                        else //if (List.class.isAssignableFrom(rm.getField().getType()))
                         {
                             collection = new ArrayList<>();
                         }
+
                         rm.setValue(collection, start);
                     }
                     collection.add(end);
