@@ -255,6 +255,7 @@ public class EndToEndTests
         finally
         {
             txn1.commit();
+            session.close();
         }
     }
 

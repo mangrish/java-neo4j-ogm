@@ -82,6 +82,10 @@ public class PropertyMetadata
             {
                 val = converter.deserialize(value);
             }
+            else if (type.isEnum())
+            {
+                val = Enum.valueOf((Class<Enum>) type, (String) value);
+            }
             field.set(instance, val);
         }
         catch (IllegalAccessException e)
