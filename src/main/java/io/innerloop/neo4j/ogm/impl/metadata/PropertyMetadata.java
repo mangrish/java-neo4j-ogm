@@ -61,7 +61,7 @@ public class PropertyMetadata
         {
             o = field.get(entity);
 
-            if (converter != null)
+            if (converter != null && o != null)
             {
                 o = converter.serialize(o);
             }
