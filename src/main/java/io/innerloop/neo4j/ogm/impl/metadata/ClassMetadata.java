@@ -154,7 +154,10 @@ public class ClassMetadata<T>
             for (Map.Entry<String, Object> entry : properties.entrySet())
             {
                 PropertyMetadata pm = propertyMetadata.get(entry.getKey());
-                pm.setValue(entry.getValue(), instance);
+                if (pm != null)
+                {
+                    pm.setValue(entry.getValue(), instance);
+                }
             }
 
             return instance;
