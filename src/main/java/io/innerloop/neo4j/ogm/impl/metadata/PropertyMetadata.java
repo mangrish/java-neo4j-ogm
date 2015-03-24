@@ -59,12 +59,11 @@ public class PropertyMetadata
         Object o;
         try
         {
+            o = field.get(entity);
+
             if (converter != null)
             {
-                o = converter.serialize(entity);
-            }
-            else {
-                o = field.get(entity);
+                o = converter.serialize(o);
             }
         }
         catch (IllegalAccessException e)
