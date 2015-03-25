@@ -121,9 +121,9 @@ public class ClassMetadata<T>
             throw new IllegalStateException("No Neo4j Id was detected. A field called id of type Long is required");
         }
 
-        LOG.debug("Class [{}] with label key: [{}] added. Primary key is: [{}].",
+        LOG.debug("Class [{}] with labels: [{}] added. Primary key is: [{}].",
                   type.getSimpleName(),
-                  labelKey,
+                  labelKey.asCypher(),
                   primaryField.getName());
     }
 

@@ -53,7 +53,7 @@ public class MetadataMap
                     aClass.isLocalClass() ||
                     Throwable.class.isAssignableFrom(aClass))
                 {
-                    LOG.info("Ignoring class from OGM: [{}]", aClass.getSimpleName());
+                    LOG.info("Ignoring class from OGM: [{}]", aClass.getName());
                     continue;
                 }
 
