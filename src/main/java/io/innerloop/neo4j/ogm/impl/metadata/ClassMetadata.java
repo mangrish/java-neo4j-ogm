@@ -164,7 +164,7 @@ public class ClassMetadata<T>
             for (Map.Entry<String, Object> entry : properties.entrySet())
             {
                 PropertyMetadata pm = propertyMetadata.get(entry.getKey());
-                if (pm != null)
+                if (pm != null && !pm.getName().equalsIgnoreCase("id"))
                 {
                     pm.setValue(entry.getValue(), instance);
                 }
