@@ -3,6 +3,8 @@ package io.innerloop.neo4j.ogm.impl.metadata;
 import io.innerloop.neo4j.ogm.annotations.Transient;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -16,6 +18,9 @@ import java.util.Map;
  */
 public class MetadataMap
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MetadataMap
+                                                                      .class);
+
     public static boolean isInnerClass(Class<?> clazz)
     {
         return clazz.isMemberClass() && !Modifier.isStatic(clazz.getModifiers());
@@ -48,6 +53,7 @@ public class MetadataMap
                     aClass.isLocalClass() ||
                     Throwable.class.isAssignableFrom(aClass))
                 {
+                    LOG.info("Ignoring class from OGM: [{}]", aClass.getSimpleName());
                     continue;
                 }
 
@@ -62,6 +68,8 @@ public class MetadataMap
 
         for (Class<?> cls : classesToProcess)
         {
+            LOG.debug("Adding class to OGM: [{}]", cls.getSimpleName());
+
             List<String> labels = new ArrayList<>();
 
             String primaryLabel = cls.getSimpleName();

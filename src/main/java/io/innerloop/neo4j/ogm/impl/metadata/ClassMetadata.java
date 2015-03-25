@@ -7,6 +7,8 @@ import io.innerloop.neo4j.ogm.annotations.Property;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 import io.innerloop.neo4j.ogm.impl.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -19,6 +21,8 @@ import java.util.Map;
  */
 public class ClassMetadata<T>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ClassMetadata.class);
+
     private static final long HASH_SEED = 0xDEADBEEF / (11 * 257);
 
     private static long hash(String string)
@@ -116,6 +120,11 @@ public class ClassMetadata<T>
         {
             throw new IllegalStateException("No Neo4j Id was detected. A field called id of type Long is required");
         }
+
+        LOG.debug("Class [{}] with label key: [{}] added. Primary key is: [{}].",
+                  type.getSimpleName(),
+                  labelKey,
+                  primaryField.getName());
     }
 
 
@@ -132,7 +141,7 @@ public class ClassMetadata<T>
         {
             result.put(pm.getName(), pm.toJson(entity));
         }
-
+        LOG.trace("Converted object of type: [{}] to JSON: {}", type.getSimpleName(), result);
         return result;
     }
 
@@ -145,6 +154,7 @@ public class ClassMetadata<T>
     {
         try
         {
+            LOG.debug("Instantiating new instance of: [{}]", type.getSimpleName());
             T instance = type.newInstance();
 
             //TODO: could get rid of this if dirty updates dont need it

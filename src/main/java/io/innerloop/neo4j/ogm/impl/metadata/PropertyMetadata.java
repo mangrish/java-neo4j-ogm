@@ -2,6 +2,8 @@ package io.innerloop.neo4j.ogm.impl.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.converters.Converter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 
@@ -10,6 +12,8 @@ import java.lang.reflect.Field;
  */
 public class PropertyMetadata
 {
+    private static final Logger LOG = LoggerFactory.getLogger(PropertyMetadata.class);
+
     private final String name;
 
     private final String fieldName;
@@ -42,6 +46,10 @@ public class PropertyMetadata
         }
 
         this.field.setAccessible(true);
+        LOG.trace("Field [{}] with name: [{}] of type: [{}] added as a property.",
+                  name,
+                  fieldName,
+                  type.getSimpleName());
     }
 
     public PropertyMetadata(Field field)
@@ -86,6 +94,11 @@ public class PropertyMetadata
             {
                 val = Enum.valueOf((Class<Enum>) type, (String) value);
             }
+
+            LOG.debug("Field [{}] of type: [{}] SET with value: [{}].",
+                      field.getName(),
+                      field.getType().getSimpleName(),
+                      val);
             field.set(instance, val);
         }
         catch (IllegalAccessException e)
@@ -101,6 +114,10 @@ public class PropertyMetadata
         try
         {
             o = field.get(ref);
+            LOG.debug("Field [{}] of type: [{}] RETRIEVED with value: [{}].",
+                      field.getName(),
+                      field.getType().getSimpleName(),
+                      o);
         }
         catch (IllegalAccessException e)
         {
