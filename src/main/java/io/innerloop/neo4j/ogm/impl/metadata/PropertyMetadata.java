@@ -100,7 +100,7 @@ public class PropertyMetadata
                       field.getType().getSimpleName(),
                       val,
                       val.getClass().getSimpleName());
-            field.set(instance, field.getType().cast(val));
+            field.set(instance, val);
         }
         catch (IllegalAccessException e)
         {
