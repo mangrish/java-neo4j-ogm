@@ -94,7 +94,10 @@ public class PropertyMetadata
             {
                 val = Enum.valueOf((Class<Enum>) type, (String) value);
             }
-
+            else if (Long.class.isAssignableFrom(type) && value != null)
+            {
+                val = ((Number) value).longValue();
+            }
             LOG.debug("Field [{}] of type: [{}] SET with value: [{}] of type [{}].",
                       field.getName(),
                       field.getType().getSimpleName(),
