@@ -95,11 +95,12 @@ public class PropertyMetadata
                 val = Enum.valueOf((Class<Enum>) type, (String) value);
             }
 
-            LOG.debug("Field [{}] of type: [{}] SET with value: [{}].",
+            LOG.debug("Field [{}] of type: [{}] SET with value: [{}] of type [{}].",
                       field.getName(),
                       field.getType().getSimpleName(),
-                      val);
-            field.set(instance, val);
+                      val,
+                      val.getClass().getSimpleName());
+            field.set(instance, field.getType().cast(val));
         }
         catch (IllegalAccessException e)
         {
