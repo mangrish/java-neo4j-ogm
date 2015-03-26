@@ -72,7 +72,6 @@ public class ClassMetadata<T>
                     throw new IllegalStateException("No id object with type Long found on object.");
                 }
                 PropertyMetadata pm = new PropertyMetadata(field);
-                propertyMetadata.put("id", pm);
                 this.neo4jIdField = pm;
             }
             else if (field.isAnnotationPresent(Property.class) &&
@@ -158,13 +157,12 @@ public class ClassMetadata<T>
             T instance = type.newInstance();
 
             //TODO: could get rid of this if dirty updates dont need it
-            PropertyMetadata idPm = propertyMetadata.get("id");
-            idPm.setValue(id, instance);
+            neo4jIdField.setValue(id, instance);
 
             for (Map.Entry<String, Object> entry : properties.entrySet())
             {
                 PropertyMetadata pm = propertyMetadata.get(entry.getKey());
-                if (pm != null && !pm.getName().equalsIgnoreCase("id"))
+                if (pm != null)
                 {
                     pm.setValue(entry.getValue(), instance);
                 }

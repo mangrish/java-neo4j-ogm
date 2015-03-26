@@ -11,7 +11,6 @@ import io.innerloop.neo4j.ogm.impl.mapping.GraphResultMapper;
 import io.innerloop.neo4j.ogm.impl.mapping.IdentityMap;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
-import io.innerloop.neo4j.ogm.impl.metadata.PropertyMetadata;
 import io.innerloop.neo4j.ogm.impl.util.CollectionUtils;
 import io.innerloop.neo4j.ogm.impl.util.StringUtils;
 import org.slf4j.Logger;
