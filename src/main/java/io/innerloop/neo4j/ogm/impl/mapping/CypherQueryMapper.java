@@ -1,9 +1,6 @@
 package io.innerloop.neo4j.ogm.impl.mapping;
 
-import com.sun.rowset.internal.Row;
-import io.innerloop.neo4j.client.Graph;
 import io.innerloop.neo4j.client.GraphStatement;
-import io.innerloop.neo4j.client.RowSet;
 import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
@@ -58,9 +55,9 @@ public class CypherQueryMapper
             // add a merge statement for this object.
             ClassMetadata<?> classMetadata = metadataMap.get(ref);
 
-            Statement<RowSet> nodeStatement = new RowStatement("MERGE (e" + classMetadata.getLabelKey().asCypher() +
-                                                               "{" + classMetadata.getPrimaryField().getName() +
-                                                               ":{0}}) SET e = {1} RETURN id(e)");
+            RowStatement nodeStatement = new RowStatement("MERGE (e" + classMetadata.getLabelKey().asCypher() +
+                                                          "{" + classMetadata.getPrimaryField().getName() +
+                                                          ":{0}}) SET e = {1} RETURN id(e)");
             nodeStatement.setParam("0", classMetadata.getPrimaryField().getValue(ref));
             nodeStatement.setParam("1", classMetadata.toJsonObject(ref));
             nodeStatements.add(nodeStatement);
@@ -136,17 +133,17 @@ public class CypherQueryMapper
                                           Object edge,
                                           ClassMetadata<?> edgeClassMetadata)
     {
-        Statement<RowSet> relationshipStatement = new RowStatement("MATCH (a" +
-                                                                    classMetadata.getLabelKey().asCypher() +
-                                                                    "{" +
-                                                                    classMetadata.getPrimaryField().getName() +
-                                                                    ":{0}}), (b" +
-                                                                    edgeClassMetadata.getLabelKey().asCypher() +
-                                                                    "{" +
-                                                                    edgeClassMetadata.getPrimaryField().getName() +
-                                                                    ":{1}}) MERGE (a)-[r:" +
-                                                                    rm.getType() +
-                                                                    "]->(b)");
+        RowStatement relationshipStatement = new RowStatement("MATCH (a" +
+                                                              classMetadata.getLabelKey().asCypher() +
+                                                              "{" +
+                                                              classMetadata.getPrimaryField().getName() +
+                                                              ":{0}}), (b" +
+                                                              edgeClassMetadata.getLabelKey().asCypher() +
+                                                              "{" +
+                                                              edgeClassMetadata.getPrimaryField().getName() +
+                                                              ":{1}}) MERGE (a)-[r:" +
+                                                              rm.getType() +
+                                                              "]->(b)");
         relationshipStatement.setParam("0", classMetadata.getPrimaryField().getValue(ref));
         relationshipStatement.setParam("1", edgeClassMetadata.getPrimaryField().getValue(edge));
         relationshipStatements.add(relationshipStatement);
@@ -158,9 +155,9 @@ public class CypherQueryMapper
     }
 
 
-    public Statement<Graph> executeGraph(String cypher, Map<String, Object> parameters)
+    public GraphStatement executeGraph(String cypher, Map<String, Object> parameters)
     {
-        Statement<Graph> statement = new GraphStatement(cypher);
+        GraphStatement statement = new GraphStatement(cypher);
 
         if (parameters != null)
         {
@@ -173,9 +170,9 @@ public class CypherQueryMapper
         return statement;
     }
 
-    public Statement<RowSet> executeRowSet(String cypher, Map<String, Object> parameters)
+    public RowStatement executeRowSet(String cypher, Map<String, Object> parameters)
     {
-        Statement<RowSet> statement = new RowStatement(cypher);
+        RowStatement statement = new RowStatement(cypher);
 
         if (parameters != null)
         {
@@ -188,7 +185,7 @@ public class CypherQueryMapper
         return statement;
     }
 
-    public <T> Statement<Graph> match(Class<T> type, Map<String, Object> parameters)
+    public <T> GraphStatement match(Class<T> type, Map<String, Object> parameters)
     {
         ClassMetadata<T> classMetadata = metadataMap.get(type);
 
@@ -230,7 +227,7 @@ public class CypherQueryMapper
             query += ", r" + j;
         }
 
-        Statement<Graph> statement = new GraphStatement(query);
+        GraphStatement statement = new GraphStatement(query);
 
         if (parameters != null)
         {
@@ -250,9 +247,9 @@ public class CypherQueryMapper
         // add a merge statement for this object.
         ClassMetadata<?> classMetadata = metadataMap.get(entity);
 
-        Statement<Graph> statement = new GraphStatement("MATCH (e" + classMetadata.getLabelKey().asCypher() +
-                                                        "{" + classMetadata.getPrimaryField().getName() +
-                                                        ":{0}})-[r]-() DELETE e, r");
+        GraphStatement statement = new GraphStatement("MATCH (e" + classMetadata.getLabelKey().asCypher() +
+                                                      "{" + classMetadata.getPrimaryField().getName() +
+                                                      ":{0}})-[r]-() DELETE e, r");
         statement.setParam("0", classMetadata.getPrimaryField().getValue(entity));
         results.add(statement);
 

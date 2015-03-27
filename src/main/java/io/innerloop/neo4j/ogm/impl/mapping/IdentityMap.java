@@ -2,7 +2,7 @@ package io.innerloop.neo4j.ogm.impl.mapping;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
-import io.innerloop.neo4j.client.RowSet;
+import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
@@ -84,21 +84,21 @@ public class IdentityMap
             if (o1 instanceof Statement)
             {
                 s = (Statement) o1;
-                long id = ((RowSet) s.getResult()).getLong(0);
+                long id = ((RowStatement)s).getResult().getLong(0);
                 metadataMap.get(o2).getNeo4jIdField().setValue(id, o2);
                 put(id, o2);
             }
             else
             {
                 s = (Statement) o2;
-                long id = ((RowSet) s.getResult()).getLong(0);
+                long id = ((RowStatement)s).getResult().getLong(0);
                 metadataMap.get(o1).getNeo4jIdField().setValue(id, o1);
                 put(id, o1);
             }
         }
     }
 
-    public void addNew(Object ref, Statement<RowSet> statement)
+    public void addNew(Object ref, Statement statement)
     {
         ClassMetadata<Object> metaData = metadataMap.get(ref);
         Object primaryKey = metaData.getPrimaryField().getValue(ref);

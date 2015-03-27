@@ -20,7 +20,7 @@ public class SessionFactory
         this.client = client;
     }
 
-    public Session openSession()
+    public Session getCurrentSession()
     {
         return Session.getSession(client, metadataMap);
     }

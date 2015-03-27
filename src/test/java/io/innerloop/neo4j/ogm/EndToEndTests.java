@@ -1,8 +1,8 @@
 package io.innerloop.neo4j.ogm;
 
+import ch.qos.logback.classic.LoggerContext;
 import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Neo4jClientException;
-import io.innerloop.neo4j.client.Transaction;
 import io.innerloop.neo4j.ogm.models.bike.Bike;
 import io.innerloop.neo4j.ogm.models.bike.Frame;
 import io.innerloop.neo4j.ogm.models.bike.Saddle;
@@ -10,7 +10,6 @@ import io.innerloop.neo4j.ogm.models.bike.Wheel;
 import io.innerloop.neo4j.ogm.models.cineasts.Actor;
 import io.innerloop.neo4j.ogm.models.cineasts.Movie;
 import io.innerloop.neo4j.ogm.models.cineasts.Role;
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -18,8 +17,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -38,7 +37,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class EndToEndTests
 {
-    private static final Logger LOG = LoggerFactory.getLogger(EndToEndTests.class);
+    private static final Logger LOG = (Logger)LoggerFactory.getLogger(EndToEndTests.class);
 
     private Neo4jClient client;
 
@@ -47,7 +46,9 @@ public class EndToEndTests
     @BeforeClass
     public static void oneTimeSetUp()
     {
-
+        LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
+        Logger rootLogger = loggerContext.getLogger("io.innerloop.neo4j.client");
+        rootLogger.setLevel(Level.DEBUG);
     }
 
     @Before
@@ -83,10 +84,10 @@ public class EndToEndTests
 
 
     @Test
-    public void testFindDomainObjectReturnsNull() throws Neo4jClientException
+    public void testFindDomainObjectReturnsNull()
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction transaction = session.getTransaction();
         try
         {
@@ -94,19 +95,19 @@ public class EndToEndTests
             // don't load anything into the database. Just look for it.
             Actor actor = session.load(Actor.class, "name", "Keanu Reeves");
             assertNull(actor);
+            transaction.commit();
         }
         finally
         {
-            transaction.commit();
             session.close();
         }
     }
 
     @Test
-    public void testSaveReachableDomainObjectsAndRelationships() throws Neo4jClientException
+    public void testSaveReachableDomainObjectsAndRelationships()
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction txn = session.getTransaction();
         try
         {
@@ -131,24 +132,22 @@ public class EndToEndTests
             List<Role> roles = session.loadAll(Role.class);
 
             assertEquals(1, roles.size());
-
+            txn.commit();
         }
         finally
         {
-            txn.commit();
             session.close();
         }
     }
 
     @Test
-    public void testSaveDomainObjectsThenDelete() throws Neo4jClientException
+    public void testSaveDomainObjectsThenDelete()
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction transaction = session.getTransaction();
         try
         {
-
             transaction.begin();
 
             Actor keanu = new Actor("Keanu Reeves");
@@ -167,57 +166,45 @@ public class EndToEndTests
             Role role = roles.iterator().next();
             //TODO: to fix this requires disconnecting the attached objects. the database seems like it has deleted the object.
             assertNull(role.getActor());
-
+            transaction.commit();
         }
         finally
         {
-            transaction.commit();
             session.close();
         }
 
     }
 
     @Test
-    public void testSaveLoadMutateThenSave() throws Neo4jClientException
+    public void testSaveLoadMutateThenSave()
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         try
         {
             Transaction txn1 = session.getTransaction();
-            try
-            {
-                txn1.begin();
 
-                Actor keanu = new Actor("Keanu Reeves");
-                Movie matrix = new Movie("Matrix", 1999);
-                keanu.playedIn(matrix, "Neo");
-                session.save(keanu);
+            txn1.begin();
 
-                List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
-                assertEquals(1, actors.size());
+            Actor keanu = new Actor("Keanu Reeves");
+            Movie matrix = new Movie("Matrix", 1999);
+            keanu.playedIn(matrix, "Neo");
+            session.save(keanu);
 
-                Actor newKeanu = actors.iterator().next();
-                newKeanu.playedIn(new Movie("Bill and Ted's Excellent Adventure", 1986), "Bill");
-                session.save(newKeanu);
-            }
-            finally
-            {
-                txn1.commit();
-            }
+            List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
+            assertEquals(1, actors.size());
+
+            Actor newKeanu = actors.iterator().next();
+            newKeanu.playedIn(new Movie("Bill and Ted's Excellent Adventure", 1986), "Bill");
+            session.save(newKeanu);
+            txn1.commit();
+
 
             Transaction txn2 = session.getTransaction();
             txn2.begin();
-            try
-            {
-                Actor retrievedKeanu = session.load(Actor.class, "name", "Keanu Reeves");
-                assertEquals(2, retrievedKeanu.getRoles().size());
-
-            }
-            finally
-            {
-                txn2.commit();
-            }
+            Actor retrievedKeanu = session.load(Actor.class, "name", "Keanu Reeves");
+            txn2.commit();
+            assertEquals(2, retrievedKeanu.getRoles().size());
         }
         finally
         {
@@ -230,7 +217,7 @@ public class EndToEndTests
     public void testDirtyUpdate() throws Neo4jClientException
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction txn1 = session.getTransaction();
         try
         {
@@ -249,22 +236,23 @@ public class EndToEndTests
             session.save(keanu);
 
             Actor fakeKeanu = session.load(Actor.class, "name", "KeanuNuNu Reeves");
+            txn1.commit();
+
             assertEquals(2, fakeKeanu.getRoles().size());
             assertTrue(keanu == fakeKeanu);
         }
         finally
         {
-            txn1.commit();
             session.close();
         }
     }
 
     @Test
-    public void canSimpleQueryDatabase() throws Neo4jClientException
+    public void canSimpleQueryDatabase()
     {
 
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction transaction = session.getTransaction();
         try
         {
@@ -298,21 +286,20 @@ public class EndToEndTests
             assertEquals(bike.getBrand(), actual2.getBrand());
             assertEquals(bike.getSaddle().getUuid(), actual2.getSaddle().getUuid());
             assertEquals(bike.getWheels().size(), actual2.getWheels().size());
-
+            transaction.commit();
         }
         finally
         {
-            transaction.commit();
             session.close();
         }
     }
 
 
     @Test
-    public void canSimpleScalarQueryDatabase() throws Neo4jClientException
+    public void canSimpleScalarQueryDatabase()
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction transaction = session.getTransaction();
         try
         {
@@ -328,21 +315,20 @@ public class EndToEndTests
             Integer actual = session.queryForObject(Integer.class,
                                                 "MATCH (saddle:Saddle{material:{material}}) RETURN COUNT(saddle)",
                                                 parameters);
-
+            transaction.commit();
             assertEquals(1, actual.intValue());
         }
         finally
         {
-            transaction.commit();
             session.close();
         }
     }
 
     @Test
-    public void canComplexQueryDatabase() throws Neo4jClientException
+    public void canComplexQueryDatabase()
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction transaction = session.getTransaction();
         try
         {
@@ -369,19 +355,19 @@ public class EndToEndTests
             assertEquals(bike.getBrand(), actual.getBrand());
             assertEquals(bike.getWheels().size(), actual.getWheels().size());
             assertNotNull(actual.getSaddle());
+            transaction.commit();
         }
         finally
         {
-            transaction.commit();
             session.close();
         }
     }
 
     @Test
-    public void canComplexExecute() throws Neo4jClientException
+    public void canComplexExecute()
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction transaction = session.getTransaction();
         try
         {
@@ -410,6 +396,7 @@ public class EndToEndTests
             Bike actual = session.queryForObject(Bike.class,
                                                  "MATCH (bike:Bike{brand:{brand}})-[rels]-() RETURN bike, COLLECT(DISTINCT rels) as rels",
                                                  parameters2);
+            transaction.commit();
 
             assertEquals(bike.getUuid(), actual.getUuid());
             assertEquals(bike.getBrand(), actual.getBrand());
@@ -418,7 +405,6 @@ public class EndToEndTests
         }
         finally
         {
-            transaction.commit();
             session.close();
         }
     }
@@ -427,7 +413,7 @@ public class EndToEndTests
     public void canSaveNewObjectTreeToDatabase() throws Neo4jClientException
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
-        Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         Transaction transaction = session.getTransaction();
         try
         {
@@ -455,11 +441,10 @@ public class EndToEndTests
             assertNotNull(bike.id);
             assertNotNull(bike.getFrame().id);
             assertNotNull(bike.getSaddle().id);
-
+            transaction.commit();
         }
         finally
         {
-            transaction.commit();
             session.close();
         }
     }

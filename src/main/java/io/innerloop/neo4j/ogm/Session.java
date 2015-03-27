@@ -2,10 +2,11 @@ package io.innerloop.neo4j.ogm;
 
 import com.google.common.primitives.Primitives;
 import io.innerloop.neo4j.client.Graph;
+import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.RowSet;
+import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
-import io.innerloop.neo4j.client.Transaction;
 import io.innerloop.neo4j.ogm.impl.mapping.CypherQueryMapper;
 import io.innerloop.neo4j.ogm.impl.mapping.GraphResultMapper;
 import io.innerloop.neo4j.ogm.impl.mapping.IdentityMap;
@@ -65,6 +66,7 @@ public class Session
 
     private final GraphResultMapper graphResultMapper;
 
+    private Transaction activeTransaction;
 
     public Session(Neo4jClient client, MetadataMap metadataMap)
     {
@@ -81,13 +83,15 @@ public class Session
     public void close()
     {
         LOG.debug("Closing session on thread: [{}]", Thread.currentThread().getName());
+
+        if (activeTransaction != null && activeTransaction.isOpen())
+        {
+            activeTransaction.close();
+        }
+
         sessions.remove();
     }
 
-    public Transaction getTransaction()
-    {
-        return client.getLongTransaction();
-    }
 
     public void flush()
     {
@@ -143,19 +147,19 @@ public class Session
 
         if (Primitives.isWrapperType(type))
         {
-            Statement<RowSet> statement = cypherMapper.executeRowSet(cypher, parameters);
+            RowStatement statement = cypherMapper.executeRowSet(cypher, parameters);
             flush(statement);
             RowSet rs = statement.getResult();
             ArrayList<T> result = new ArrayList<>();
             while (rs.hasNext())
             {
-                result.add((T)rs.next()[0]);
+                result.add((T) rs.next()[0]);
             }
             return result;
         }
         else
         {
-            Statement<Graph> statement = cypherMapper.executeGraph(cypher, parameters);
+            GraphStatement statement = cypherMapper.executeGraph(cypher, parameters);
             flush(statement);
             Graph graph = statement.getResult();
             return graphResultMapper.map(type, graph);
@@ -235,7 +239,7 @@ public class Session
 
     public <T> List<T> loadAll(Class<T> type, Map<String, Object> properties)
     {
-        Statement<Graph> statement = cypherMapper.match(type, properties);
+        GraphStatement statement = cypherMapper.match(type, properties);
         flush(statement);
         Graph graph = statement.getResult();
 
@@ -331,5 +335,14 @@ public class Session
         {
             delete(element);
         }
+    }
+
+    public Transaction getTransaction()
+    {
+        if (activeTransaction == null || activeTransaction.isClosed())
+        {
+            activeTransaction = new Transaction(client);
+        }
+        return activeTransaction;
     }
 }
