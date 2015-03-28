@@ -8,11 +8,14 @@ This library does not support embedded Neo4J instances.
 # Features
 
 1. Mapping of POJO's to Neo4J Nodes without the use of annotations.
-1. Annotation overriding where more information is required
-1. First class support for Cypher querying.
+1. First class support for Cypher querying with automatic domain mapping of results.
+1. Persistence by reachability. No need to call save() for objects already in the database!
+1. Support for automatic retrieval of aggregates via the @Aggregate annotation.
+1. Annotation overriding for when defaults aren't good enough.
 1. Fast class scanning on startup with Google Reflections.
-1. Efficient statement batching thanks to [Java Neo4J Client](https://github.com/inner-loop/java-neo4j-client)
+1. Efficient statement batching thanks to [Java Neo4J Client](https://github.com/inner-loop/java-neo4j-client) Connections.
 1. Simple mechanism to add database field conversion.
+1. Support for collection ordering via relationship properties.
 
 ## Installation
 
@@ -65,6 +68,13 @@ If you want out of the box Spring support right now check out the
 [Spring Data Neo4J project](http://docs.spring.io/spring-data/neo4j/docs/4.0.0.M1/) (of which I'm also a contributor!)
 
 I plan on adding spring support in a later release.
+
+## Differences between Spring Data Neo4J
+
+- This OGM does not support the concept of "Relationship Entities" natively. Relationships in a Neo4J Database provide
+metadata about the relationship between two nodes. Instead, relationships with properties can be modelled with defining ordering 
+or grouping semantics (e.g. order a list of objects by a relationship property called 'weight' etc.).
+- If you only do things "the Spring way" then this project is probably not for you!
 
 #Roadmap
 
