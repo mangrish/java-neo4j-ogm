@@ -1,10 +1,12 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
 import com.google.common.base.CaseFormat;
-import io.innerloop.neo4j.client.json.JSONObject;
+import io.innerloop.neo4j.client.spi.impl.rest.json.JSONObject;
 import io.innerloop.neo4j.ogm.annotations.Id;
+import io.innerloop.neo4j.ogm.annotations.Indexed;
 import io.innerloop.neo4j.ogm.annotations.Property;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
+import io.innerloop.neo4j.ogm.impl.index.Index;
 import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 import io.innerloop.neo4j.ogm.impl.util.StringUtils;
 import org.slf4j.Logger;
@@ -12,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +48,8 @@ public class ClassMetadata<T>
 
     private final SortedMultiLabel labelKey;
 
+    private final Map<String, Index> indexes;
+
     private final Map<String, PropertyMetadata> propertyMetadata;
 
     private final Map<String, RelationshipMetadata> relationshipMetadata;
@@ -58,6 +63,7 @@ public class ClassMetadata<T>
         this.labelKey = labelKey;
         this.propertyMetadata = new HashMap<>();
         this.relationshipMetadata = new HashMap<>();
+        this.indexes = new HashMap<>();
 
         for (Field field : ReflectionUtils.getFields(type))
         {
@@ -99,6 +105,7 @@ public class ClassMetadata<T>
                     if (fieldName.equals("uuid") || field.isAnnotationPresent(Id.class))
                     {
                         this.primaryField = pm;
+                        this.indexes.put(fieldName, new Index(primaryLabel, fieldName, true));
                     }
                 }
                 else
@@ -106,6 +113,12 @@ public class ClassMetadata<T>
                     String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, field.getName());
                     relationshipMetadata.put(relType, new RelationshipMetadata(relType, field));
                 }
+            }
+
+            Indexed indexed = field.getAnnotation(Indexed.class);
+            if (indexed != null)
+            {
+                this.indexes.put(field.getName(), new Index(primaryLabel, field.getName(), indexed.unique()));
             }
         }
 
@@ -193,7 +206,6 @@ public class ClassMetadata<T>
 
     public long hash(T object)
     {
-
         long hash = HASH_SEED;
         for (PropertyMetadata metadata : propertyMetadata.values())
         {
@@ -205,5 +217,10 @@ public class ClassMetadata<T>
         }
 
         return hash;
+    }
+
+    public Collection<Index> getIndexes()
+    {
+        return indexes.values();
     }
 }

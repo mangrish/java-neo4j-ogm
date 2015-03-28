@@ -1,6 +1,7 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Transient;
+import io.innerloop.neo4j.ogm.impl.index.Index;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.slf4j.Logger;
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,8 +20,7 @@ import java.util.Map;
  */
 public class MetadataMap
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MetadataMap
-                                                                      .class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetadataMap.class);
 
     public static boolean isInnerClass(Class<?> clazz)
     {
@@ -111,5 +112,16 @@ public class MetadataMap
     public <T> ClassMetadata<T> get(T entity)
     {
         return lookupByClass.get(entity.getClass());
+    }
+
+    public Collection<Index> getIndexes()
+    {
+        Collection<Index> indexes = new ArrayList<>();
+        for (ClassMetadata classMetadata : lookupByClass.values())
+        {
+            indexes.addAll(classMetadata.getIndexes());
+        }
+
+        return indexes;
     }
 }

@@ -1,10 +1,12 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
+import io.innerloop.neo4j.ogm.annotations.Indexed;
 import io.innerloop.neo4j.ogm.converters.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
 /**

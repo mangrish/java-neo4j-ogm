@@ -1,8 +1,9 @@
 package io.innerloop.neo4j.ogm;
 
+import io.innerloop.neo4j.client.Connection;
 import io.innerloop.neo4j.client.Neo4jClient;
-import io.innerloop.neo4j.ogm.impl.mapping.CypherQueryMapper;
-import io.innerloop.neo4j.ogm.impl.mapping.GraphResultMapper;
+import io.innerloop.neo4j.client.Neo4jClientException;
+import io.innerloop.neo4j.ogm.impl.index.Index;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 
 /**
@@ -18,6 +19,32 @@ public class SessionFactory
     {
         this.metadataMap = new MetadataMap(packages);
         this.client = client;
+
+        for (Index index : this.metadataMap.getIndexes())
+        {
+            try
+            {
+                Connection connection = client.getConnection();
+                connection.add(index.drop());
+                connection.commit();
+            }
+            catch (Neo4jClientException n4jce)
+            {
+                // do nothing...
+            }
+            try
+            {
+                Connection connection = client.getConnection();
+                connection.add(index.index());
+                connection.commit();
+            }
+            catch (Neo4jClientException n4jce)
+            {
+                // do nothing...
+            }
+
+        }
+
     }
 
     public Session getCurrentSession()

@@ -70,12 +70,12 @@ I plan on adding spring support in a later release.
 
 ## 0.1.x
 - Fix delete semantics
-- Add indexing support
+- ~~Add indexing support~~
 
 ## 0.2.x
-- Fix Transaction behaviour (client)
-- Add support for indexing and constraints
-- Look at a way to add @AggregateRoot support
+- ~~Fix Transaction behaviour (client)~~
+- ~~Add support for indexing and constraints~~
+- Look at a way to add @Aggregate support
 
 ## 0.3.x
 - Remove ```Long id``` implementation detail requirement from classes with javassist.
