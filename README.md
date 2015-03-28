@@ -11,7 +11,7 @@ This library does not support embedded Neo4J instances.
 1. Annotation overriding where more information is required
 1. First class support for Cypher querying.
 1. Fast class scanning on startup with Google Reflections.
-1. Efficient statement batching thanks to [Java Neo4J Client)[https://github.com/inner-loop/java-neo4j-client]
+1. Efficient statement batching thanks to [Java Neo4J Client](https://github.com/inner-loop/java-neo4j-client)
 1. Simple mechanism to add database field conversion.
 
 ## Installation
