@@ -183,9 +183,13 @@ public class ClassMetadata<T>
 
             return instance;
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException ie)
         {
-            throw new RuntimeException("Could not instantiate class class");
+            throw new RuntimeException("Could not instantiate class class due to missing default constructor.", ie);
+        }
+        catch (IllegalAccessException iae)
+        {
+            throw new RuntimeException("OGM does not have access to instantiate this field.", iae);
         }
     }
 
