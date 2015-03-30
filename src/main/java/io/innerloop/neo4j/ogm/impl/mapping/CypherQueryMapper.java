@@ -93,6 +93,11 @@ public class CypherQueryMapper
 
                         for (Object o : (Iterable) edge)
                         {
+                            if (edgeClassMetadata == null)
+                            {
+                                edgeClassMetadata = metadataMap.get((Class) o.getClass());
+                            }
+
                             addRelationshipStatement(relationshipStatements,
                                                      toVisit,
                                                      visited,
