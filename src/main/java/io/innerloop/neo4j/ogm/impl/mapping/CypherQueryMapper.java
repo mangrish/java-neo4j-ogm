@@ -84,7 +84,9 @@ public class CypherQueryMapper
                         Type type = rm.getField().getGenericType();
                         if (!(type instanceof ParameterizedType))
                         {
-                            throw new RuntimeException("Collection type must be parameterised.");
+                            throw new RuntimeException("Collection of type: [" + type.getTypeName() + "] on field: [" +
+                                                       rm.getField().getName() + "] of class: [" +
+                                                       rm.getField().getDeclaringClass() + "] must be parameterised.");
                         }
                         ParameterizedType returnType = (ParameterizedType) type;
                         Type componentType = returnType.getActualTypeArguments()[0];

@@ -9,8 +9,11 @@ import java.util.Collection;
 public class RelationshipMetadata
 {
     private final Field field;
+
     private String type;
+
     private final boolean collection;
+
     public RelationshipMetadata(String type, Field field)
     {
         this.type = type;
@@ -28,7 +31,9 @@ public class RelationshipMetadata
         }
         catch (IllegalAccessException e)
         {
-            throw new RuntimeException("Field is not accessible.", e);
+            throw new RuntimeException("Could get the value of field: [" + field.getName() + "] on class: [" +
+                                       field.getDeclaringClass() +
+                                       "] for object [" + entity + "]", e);
         }
     }
 
@@ -55,7 +60,9 @@ public class RelationshipMetadata
         }
         catch (IllegalAccessException e)
         {
-            throw new RuntimeException("Field is not accessible.", e);
+            throw new RuntimeException("Could set the value of field: [" + field.getName() + "] on class: [" +
+                                       field.getDeclaringClass() +
+                                       "] for object [" + instance + "] with value: [" + value + "]", e);
         }
     }
 }

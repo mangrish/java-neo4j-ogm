@@ -1,12 +1,10 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
-import io.innerloop.neo4j.ogm.annotations.Indexed;
 import io.innerloop.neo4j.ogm.converters.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
 /**
@@ -43,15 +41,18 @@ public class PropertyMetadata
             }
             catch (InstantiationException | IllegalAccessException e)
             {
-                throw new RuntimeException("Could not find converter class: " + converterCls.getName(), e);
+                throw new RuntimeException("Could not instantiate converter class: [" + converterCls.getName() +
+                                           "] for field: [" + fieldName + "] on class: [" + field.getDeclaringClass() +
+                                           "]", e);
             }
         }
 
         this.field.setAccessible(true);
-        LOG.trace("Field [{}] with name: [{}] of type: [{}] added as a property.",
+        LOG.trace("Field [{}] with name: [{}] of type: [{}] added as a property to class [{}]",
                   name,
                   fieldName,
-                  type.getSimpleName());
+                  type.getSimpleName(),
+                  field.getDeclaringClass());
     }
 
     public PropertyMetadata(Field field)
@@ -78,7 +79,9 @@ public class PropertyMetadata
         }
         catch (IllegalAccessException e)
         {
-            throw new RuntimeException("Could not access this field. Set this field to accessible");
+            throw new RuntimeException("Could not access field: [" + fieldName + "] on class: [" +
+                                       field.getDeclaringClass() +
+                                       "]. Does this field exist and is it accessible?", e);
         }
         return o;
     }
@@ -109,7 +112,9 @@ public class PropertyMetadata
         }
         catch (IllegalAccessException e)
         {
-            throw new RuntimeException("Could not access this field. Set this field to accessible");
+            throw new RuntimeException("Could set the value of field: [" + fieldName + "] on class: [" +
+                                       field.getDeclaringClass() +
+                                       "] for object [" + instance + "] with value: [" + value + "]", e);
         }
 
     }
@@ -127,7 +132,9 @@ public class PropertyMetadata
         }
         catch (IllegalAccessException e)
         {
-            throw new RuntimeException("Could not access this field. Set this field to accessible");
+            throw new RuntimeException("Could get the value of field: [" + fieldName + "] on class: [" +
+                                       field.getDeclaringClass() +
+                                       "] for object [" + ref + "]", e);
         }
         return o;
     }

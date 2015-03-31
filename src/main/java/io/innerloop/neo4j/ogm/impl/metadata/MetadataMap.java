@@ -62,7 +62,7 @@ public class MetadataMap
             }
             catch (ClassNotFoundException cnfe)
             {
-                throw new RuntimeException("Could not load class: " + type + ". See chained exception for details.",
+                throw new RuntimeException("Could not load class: [" + type + "]. See chained exception for details.",
                                            cnfe);
             }
         }

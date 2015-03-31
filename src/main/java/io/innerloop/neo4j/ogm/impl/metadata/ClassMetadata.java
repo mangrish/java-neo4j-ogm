@@ -75,7 +75,8 @@ public class ClassMetadata<T>
             {
                 if (!field.getType().equals(Long.class))
                 {
-                    throw new IllegalStateException("No id object with type Long found on object.");
+                    throw new IllegalStateException("No object called 'id' with type Long found on class [" +
+                                                    type.getName() + "]");
                 }
                 PropertyMetadata pm = new PropertyMetadata(field);
                 this.neo4jIdField = pm;
@@ -124,13 +125,14 @@ public class ClassMetadata<T>
 
         if (primaryField == null)
         {
-            throw new IllegalStateException("No Primary Field was detected. A field called uuid or " +
-                                            "annotated with @Id is required");
+            throw new IllegalStateException("No Primary Field was detected for class: [" + type.getName() +
+                                            "]. A field called 'uuid' or annotated with @Id is required");
         }
 
         if (neo4jIdField == null)
         {
-            throw new IllegalStateException("No Neo4j Id was detected. A field called id of type Long is required");
+            throw new IllegalStateException("No Neo4j Id was detected for class: [" + type.getName() +
+                                            "]. A field called id of type Long is required");
         }
 
         LOG.debug("Class [{}] with labels: [{}] added. Primary key is: [{}].",
@@ -185,11 +187,12 @@ public class ClassMetadata<T>
         }
         catch (InstantiationException ie)
         {
-            throw new RuntimeException("Could not instantiate class class due to missing default constructor.", ie);
+            throw new RuntimeException("Could not instantiate class class due to missing default constructor on class: " +
+                                       type.getName(), ie);
         }
         catch (IllegalAccessException iae)
         {
-            throw new RuntimeException("OGM does not have access to instantiate this field.", iae);
+            throw new RuntimeException("OGM does not have access to instantiate the class: " + type.getName(), iae);
         }
     }
 

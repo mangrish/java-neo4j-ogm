@@ -73,6 +73,7 @@ public class GraphResultMapper
             Object start = identityMap.get(relationship.getStartNodeId());
             Object end = identityMap.get(relationship.getEndNodeId());
 
+            //TODO: WTF is going on here?!
             if (start != null)
             {
                 continue;
@@ -110,7 +111,7 @@ public class GraphResultMapper
             }
             catch (IllegalAccessException e)
             {
-                throw new RuntimeException("No field found on object", e);
+                throw new RuntimeException("No accessible relationship exists between: [" + start + "] and [" + end + "]" , e);
             }
         }
         return results;
