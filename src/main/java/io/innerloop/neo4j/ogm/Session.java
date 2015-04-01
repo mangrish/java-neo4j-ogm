@@ -58,7 +58,7 @@ public class Session
 
     private final List<Object> deletedObjects;
 
-    private final Neo4jClient client;
+    final Neo4jClient client;
 
     private final MetadataMap metadataMap;
 
@@ -83,12 +83,6 @@ public class Session
     public void close()
     {
         LOG.debug("Closing session on thread: [{}]", Thread.currentThread().getName());
-
-        if (activeTransaction != null && activeTransaction.isOpen())
-        {
-            activeTransaction.close();
-        }
-
         sessions.remove();
     }
 
@@ -341,7 +335,7 @@ public class Session
     {
         if (activeTransaction == null || activeTransaction.isClosed())
         {
-            activeTransaction = new Transaction(client);
+            activeTransaction = new Transaction(this);
         }
         return activeTransaction;
     }

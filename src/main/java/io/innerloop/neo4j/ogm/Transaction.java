@@ -1,22 +1,28 @@
 package io.innerloop.neo4j.ogm;
 
 import io.innerloop.neo4j.client.Connection;
-import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by markangrish on 26/03/2015.
  */
 public class Transaction
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Transaction.class);
+
     private final Connection connection;
+
+    private final Session session;
 
     private boolean committed;
 
 
-    public Transaction(Neo4jClient client)
+    public Transaction(Session session)
     {
-        this.connection = client.getConnection();
+        this.session = session;
+        this.connection = session.client.getConnection();
     }
 
     public void add(Statement statement)
@@ -26,6 +32,7 @@ public class Transaction
 
     public void flush()
     {
+        LOG.debug("Flushing Transaction.");
         connection.flush();
     }
 
@@ -36,15 +43,15 @@ public class Transaction
 
     public void commit()
     {
+        session.flush();
         connection.commit();
         this.committed = true;
     }
 
-
-    public void close()
+    public void rollback()
     {
-        connection.commit();
-        this.committed = true;
+        connection.rollback();
+        this.committed = false;
     }
 
     public boolean isOpen()
