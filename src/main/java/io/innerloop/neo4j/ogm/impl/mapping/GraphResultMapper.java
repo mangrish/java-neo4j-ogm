@@ -34,6 +34,7 @@ public class GraphResultMapper
 
     public <T> List<T> map(Class<T> type, Graph graph)
     {
+        Map<Long, Object> createRelationshipsFor = new HashMap<>();
         List<T> results = new ArrayList<>();
 
         for (Node node : graph.getNodes())
@@ -60,6 +61,7 @@ public class GraphResultMapper
                 Map<String, Object> properties = node.getProperties();
                 instance = clsMetadata.createInstance(node.getId(), properties);
                 identityMap.put(node.getId(), instance);
+                createRelationshipsFor.put(node.getId(), instance);
             }
 
             if (type.isAssignableFrom(instance.getClass()))
@@ -73,8 +75,9 @@ public class GraphResultMapper
             Object start = identityMap.get(relationship.getStartNodeId());
             Object end = identityMap.get(relationship.getEndNodeId());
 
-            //TODO: WTF is going on here?!
-            if (start != null)
+            boolean createRelationship = createRelationshipsFor.containsKey(relationship.getStartNodeId());
+
+            if (start == null || !createRelationship)
             {
                 continue;
             }

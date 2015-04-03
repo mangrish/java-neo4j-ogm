@@ -97,7 +97,16 @@ public class ClassMetadata<T>
             else
             {
                 Class cls = field.getType();
-                if (!Iterable.class.isAssignableFrom(cls) && !metadataMap.contains(cls))
+                boolean isRelationshipClass = false;
+                for (Class<?> c : metadataMap)
+                {
+                    if (cls.isAssignableFrom(c))
+                    {
+                        isRelationshipClass = true;
+                    }
+                }
+
+                if (!Iterable.class.isAssignableFrom(cls) && !isRelationshipClass)
                 {
                     String fieldName = field.getName();
                     PropertyMetadata pm = new PropertyMetadata(field);

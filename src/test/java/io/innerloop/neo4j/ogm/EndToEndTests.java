@@ -6,6 +6,7 @@ import io.innerloop.neo4j.client.Neo4jClientException;
 import io.innerloop.neo4j.ogm.models.bike.Bike;
 import io.innerloop.neo4j.ogm.models.bike.Frame;
 import io.innerloop.neo4j.ogm.models.bike.Saddle;
+import io.innerloop.neo4j.ogm.models.bike.SpeedFrame;
 import io.innerloop.neo4j.ogm.models.bike.Wheel;
 import io.innerloop.neo4j.ogm.models.cineasts.Actor;
 import io.innerloop.neo4j.ogm.models.cineasts.Movie;
@@ -263,9 +264,11 @@ public class EndToEndTests
             Wheel frontWheel = new Wheel();
             Wheel backWheel = new Wheel();
             Bike bike = new Bike();
+            Frame frame = new SpeedFrame("Carbon Composite", 2.2);
             bike.setBrand("Huffy");
             bike.setWheels(Arrays.asList(frontWheel, backWheel));
             bike.setSaddle(expected);
+            bike.setFrame(frame);
             session.save(bike);
 
             HashMap<String, Object> parameters = new HashMap<>();
@@ -285,6 +288,7 @@ public class EndToEndTests
             assertEquals(bike.getUuid(), actual2.getUuid());
             assertEquals(bike.getBrand(), actual2.getBrand());
             assertEquals(bike.getSaddle().getUuid(), actual2.getSaddle().getUuid());
+            assertEquals(bike.getFrame().getUuid(), actual2.getFrame().getUuid());
             assertEquals(bike.getWheels().size(), actual2.getWheels().size());
             transaction.commit();
         }

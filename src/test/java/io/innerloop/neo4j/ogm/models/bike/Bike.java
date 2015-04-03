@@ -17,6 +17,8 @@ public class Bike
     @Convert(UUIDConverter.class)
     private UUID uuid;
 
+    private GearSystem gearSystem;
+
     private String[] colours;
 
     private List<Wheel> wheels;
@@ -85,5 +87,15 @@ public class Bike
     public void setFrame(Frame frame)
     {
         this.frame = frame;
+    }
+
+    public GearSystem getGearSystem()
+    {
+        return gearSystem;
+    }
+
+    public void setGearSystem(GearSystem gearSystem)
+    {
+        this.gearSystem = gearSystem;
     }
 }
