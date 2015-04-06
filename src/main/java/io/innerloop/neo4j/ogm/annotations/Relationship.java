@@ -12,13 +12,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Relationship
 {
-    static final String INCOMING = "INCOMING";
-    static final String OUTGOING = "OUTGOING";
-    static final String UNDIRECTED = "UNDIRECTED";
+    String INCOMING = "INCOMING";
+    String OUTGOING = "OUTGOING";
+    String UNDIRECTED = "UNDIRECTED";
 
     String type() default "";
 
     String direction() default UNDIRECTED;
-
-    FetchType fetch() default FetchType.LAZY;
 }

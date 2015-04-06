@@ -91,23 +91,31 @@ public class PropertyMetadata
         try
         {
             Object val = value;
-            if (converter != null)
+            if (val != null)
             {
-                val = converter.deserialize(value);
+                if (converter != null)
+                {
+                    val = converter.deserialize(value);
+                }
+                else if (type.isEnum())
+                {
+                    val = Enum.valueOf((Class<Enum>) type, (String) value);
+                }
+                else if (Long.class.isAssignableFrom(type) && value != null)
+                {
+                    val = ((Number) value).longValue();
+                }
+                LOG.debug("Field [{}] of type: [{}] SET with value: [{}] of type [{}].",
+                          field.getName(),
+                          field.getType().getSimpleName(),
+                          val,
+                          val.getClass().getSimpleName());
             }
-            else if (type.isEnum())
-            {
-                val = Enum.valueOf((Class<Enum>) type, (String) value);
+            else {
+                LOG.debug("Field [{}] of type: [{}] SET with null value.",
+                          field.getName(),
+                          field.getType().getSimpleName());
             }
-            else if (Long.class.isAssignableFrom(type) && value != null)
-            {
-                val = ((Number) value).longValue();
-            }
-            LOG.debug("Field [{}] of type: [{}] SET with value: [{}] of type [{}].",
-                      field.getName(),
-                      field.getType().getSimpleName(),
-                      val,
-                      val.getClass().getSimpleName());
             field.set(instance, val);
         }
         catch (IllegalAccessException e)

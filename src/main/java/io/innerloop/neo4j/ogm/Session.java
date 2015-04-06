@@ -209,13 +209,15 @@ public class Session
             }
             return null;
         }
-
-        if (resultSize < 1)
+        else if (resultSize > 1)
         {
             throw new RuntimeException("Result not of expected size. Expected 1 row but found " + resultSize);
         }
+        else
+        {
+            return results.iterator().next();
 
-        return results.iterator().next();
+        }
     }
 
 
