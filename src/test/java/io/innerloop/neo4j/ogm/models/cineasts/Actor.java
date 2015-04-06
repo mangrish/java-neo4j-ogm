@@ -7,6 +7,7 @@ package io.innerloop.neo4j.ogm.models.cineasts;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.annotations.Id;
+import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.converters.UUIDConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
@@ -24,6 +25,7 @@ public class Actor
 
     private String name;
 
+    @Relationship(direction = Relationship.Direction.OUTGOING)
     private Set<Role> roles;
 
     public Actor()

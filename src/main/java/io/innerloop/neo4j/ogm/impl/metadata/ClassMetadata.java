@@ -90,7 +90,9 @@ public class ClassMetadata<T>
             else if (field.isAnnotationPresent(Relationship.class) &&
                      StringUtils.isNotEmpty(field.getAnnotation(Relationship.class).type()))
             {
-                RelationshipMetadata rm = new RelationshipMetadata(field.getAnnotation(Relationship.class).type(),
+                Relationship relationship = field.getAnnotation(Relationship.class);
+                RelationshipMetadata rm = new RelationshipMetadata(relationship.type(),
+                                                                   relationship.direction(),
                                                                    field);
                 relationshipMetadata.put(rm.getType(), rm);
             }
@@ -121,7 +123,10 @@ public class ClassMetadata<T>
                 else
                 {
                     String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, field.getName());
-                    relationshipMetadata.put(relType, new RelationshipMetadata(relType, field));
+                    relationshipMetadata.put(relType,
+                                             new RelationshipMetadata(relType,
+                                                                      Relationship.Direction.UNDIRECTED,
+                                                                      field));
                 }
             }
 

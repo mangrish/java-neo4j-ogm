@@ -3,6 +3,7 @@ package io.innerloop.neo4j.ogm.impl.mapping;
 import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
+import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
@@ -148,9 +149,15 @@ public class CypherQueryMapper
                                                               edgeClassMetadata.getLabelKey().asCypher() +
                                                               "{" +
                                                               edgeClassMetadata.getPrimaryField().getName() +
-                                                              ":{1}}) MERGE (a)-[r:" +
+                                                              ":{1}}) MERGE (a)" +
+                                                              (rm.getDirection().equals(Relationship.Direction.INCOMING) ? "<":"") +
+                                                              "-" +
+                                                              "[r:" +
                                                               rm.getType() +
-                                                              "]->(b)");
+                                                              "]" +
+                                                              "-" +
+                                                              (rm.getDirection().equals(Relationship.Direction.OUTGOING) ? ">":"") +
+                                                              "(b)");
         relationshipStatement.setParam("0", classMetadata.getPrimaryField().getValue(ref));
         relationshipStatement.setParam("1", edgeClassMetadata.getPrimaryField().getValue(edge));
         relationshipStatements.add(relationshipStatement);

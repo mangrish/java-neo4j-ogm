@@ -12,11 +12,15 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Relationship
 {
-    String INCOMING = "INCOMING";
-    String OUTGOING = "OUTGOING";
-    String UNDIRECTED = "UNDIRECTED";
+    enum Direction
+    {
+        INCOMING,
+        OUTGOING,
+        UNDIRECTED
+    }
+
 
     String type() default "";
 
-    String direction() default UNDIRECTED;
+    Direction direction() default Direction.UNDIRECTED;
 }

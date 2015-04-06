@@ -1,5 +1,7 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
+import io.innerloop.neo4j.ogm.annotations.Relationship;
+
 import java.lang.reflect.Field;
 import java.util.Collection;
 
@@ -10,17 +12,19 @@ public class RelationshipMetadata
 {
     private final Field field;
 
+    private final Relationship.Direction  direction;
+
     private String type;
 
     private final boolean collection;
 
-    public RelationshipMetadata(String type, Field field)
+    public RelationshipMetadata(String type, Relationship.Direction direction, Field field)
     {
         this.type = type;
         this.collection = Collection.class.isAssignableFrom(field.getType());
         this.field = field;
         this.field.setAccessible(true);
-
+        this.direction = direction;
     }
 
     public <T> Object getValue(T entity)
@@ -40,6 +44,11 @@ public class RelationshipMetadata
     public String getType()
     {
         return type;
+    }
+
+    public Relationship.Direction getDirection()
+    {
+        return direction;
     }
 
     public boolean isCollection()
