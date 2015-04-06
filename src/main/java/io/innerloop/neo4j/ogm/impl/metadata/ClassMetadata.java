@@ -210,6 +210,11 @@ public class ClassMetadata<T>
         }
     }
 
+    public Class<T> getType()
+    {
+        return type;
+    }
+
     public Iterable<RelationshipMetadata> getRelationships()
     {
         return relationshipMetadata.values();

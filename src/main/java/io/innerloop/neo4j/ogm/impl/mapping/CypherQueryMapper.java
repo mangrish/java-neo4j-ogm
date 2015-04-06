@@ -3,11 +3,13 @@ package io.innerloop.neo4j.ogm.impl.mapping;
 import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
+import io.innerloop.neo4j.ogm.annotations.Aggregate;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -209,6 +211,19 @@ public class CypherQueryMapper
         int i = 1;
         for (RelationshipMetadata rm : classMetadata.getRelationships())
         {
+            Field f = rm.getField();
+            Class<?> ty = f.getType();
+            if (Iterable.class.isAssignableFrom(ty))
+            {
+                ParameterizedType t = (ParameterizedType)f.getGenericType();
+                ty = (Class<?>) t.getActualTypeArguments()[0];
+            }
+
+            if (!ty.isAnnotationPresent(Aggregate.class))
+            {
+                continue;
+            }
+
             query += " OPTIONAL MATCH (a)-[r" + i + ":" + rm.getType() + "]-() ";
             query += "WITH a, COLLECT(r" + i + ") as r" + i;
             for (int j = 1; j < i; j++)
@@ -217,7 +232,6 @@ public class CypherQueryMapper
             }
             i++;
         }
-
 
         if (parameters != null)
         {
