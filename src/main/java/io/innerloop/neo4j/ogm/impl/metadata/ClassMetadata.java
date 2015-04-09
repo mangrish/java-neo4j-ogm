@@ -1,6 +1,7 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.primitives.Primitives;
 import io.innerloop.neo4j.client.spi.impl.rest.json.JSONObject;
 import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.annotations.Indexed;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -99,6 +101,12 @@ public class ClassMetadata<T>
             else
             {
                 Class cls = field.getType();
+                Class parametrizedCls = null;
+                if (Iterable.class.isAssignableFrom(cls))
+                {
+                    ParameterizedType t = (ParameterizedType) field.getGenericType();
+                    parametrizedCls = (Class<?>) t.getActualTypeArguments()[0];
+                }
                 boolean isRelationshipClass = false;
                 for (Class<?> c : metadataMap)
                 {
@@ -108,7 +116,17 @@ public class ClassMetadata<T>
                     }
                 }
 
-                if (!Iterable.class.isAssignableFrom(cls) && !isRelationshipClass)
+                if (Iterable.class.isAssignableFrom(cls) && (parametrizedCls != null &&
+                     !(Primitives.isWrapperType(parametrizedCls) || String.class.isAssignableFrom(parametrizedCls))) || isRelationshipClass)
+                {
+                    String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, field.getName());
+                    relationshipMetadata.put(relType,
+                                             new RelationshipMetadata(relType,
+                                                                      Relationship.Direction.UNDIRECTED,
+                                                                      field));
+
+                }
+                else
                 {
                     String fieldName = field.getName();
                     PropertyMetadata pm = new PropertyMetadata(field);
@@ -119,14 +137,6 @@ public class ClassMetadata<T>
                         this.primaryField = pm;
                         this.indexes.put(fieldName, new Index(primaryLabel, fieldName, true));
                     }
-                }
-                else
-                {
-                    String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, field.getName());
-                    relationshipMetadata.put(relType,
-                                             new RelationshipMetadata(relType,
-                                                                      Relationship.Direction.UNDIRECTED,
-                                                                      field));
                 }
             }
 

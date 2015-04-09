@@ -6,6 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by markangrish on 11/11/2014.
@@ -20,6 +25,8 @@ public class PropertyMetadata
 
     private final Class<?> type;
 
+    private Class<?> paramterizedType;
+
     private Converter converter;
 
     private final Field field;
@@ -31,7 +38,11 @@ public class PropertyMetadata
         this.fieldName = field.getName();
         this.type = field.getType();
         this.field = field;
-
+        if (Iterable.class.isAssignableFrom(type))
+        {
+            ParameterizedType t = (ParameterizedType) field.getGenericType();
+            paramterizedType = (Class<?>) t.getActualTypeArguments()[0];
+        }
         if (field.isAnnotationPresent(Convert.class))
         {
             Class<?> converterCls = field.getAnnotation(Convert.class).value();
@@ -100,6 +111,14 @@ public class PropertyMetadata
                 else if (type.isEnum())
                 {
                     val = Enum.valueOf((Class<Enum>) type, (String) value);
+                }
+                else if (List.class.isAssignableFrom(type))
+                {
+                    val = new ArrayList<>();
+                }
+                else if (Set.class.isAssignableFrom(type))
+                {
+                    val = new HashSet<>();
                 }
                 else if (Long.class.isAssignableFrom(type) && value != null)
                 {

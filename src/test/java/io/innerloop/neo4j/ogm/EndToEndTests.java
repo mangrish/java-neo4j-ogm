@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -277,7 +278,11 @@ public class EndToEndTests
             Wheel frontWheel = new Wheel();
             Wheel backWheel = new Wheel();
             Bike bike = new Bike();
-            Frame frame = new SpeedFrame("Carbon Composite", 2.2);
+            SpeedFrame frame = new SpeedFrame("Carbon Composite", 2.2);
+            frame.addGearRatio("1");
+            frame.addGearRatio("2");
+            frame.addGearRatio("3");
+            frame.addGearRatio("4");
             bike.setBrand("Huffy");
             bike.setWheels(Arrays.asList(frontWheel, backWheel));
             bike.setSaddle(expected);
@@ -302,6 +307,13 @@ public class EndToEndTests
             assertEquals(bike.getBrand(), actual2.getBrand());
             assertEquals(bike.getSaddle().getUuid(), actual2.getSaddle().getUuid());
             assertEquals(bike.getFrame().getUuid(), actual2.getFrame().getUuid());
+
+            if (!(actual2.getFrame() instanceof SpeedFrame))
+            {
+                fail("Frame was expected to be instance of SpeedFrame");
+            }
+            SpeedFrame sf = (SpeedFrame)actual2.getFrame();
+            assertEquals(frame.getGearRatios().size(),sf.getGearRatios().size());
             assertEquals(bike.getWheels().size(), actual2.getWheels().size());
             transaction.commit();
         }

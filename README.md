@@ -7,7 +7,7 @@ This library does not support embedded Neo4J instances.
 
 # Features
 
-1. Mapping of POJO's to Neo4J Nodes without the use of annotations.
+1. Mapping of POJO's to Neo4J Nodes with minimal use of annotations.
 1. First class support for Cypher querying with automatic domain mapping of results.
 1. Persistence by reachability. No need to call save() for objects already in the database!
 1. Support for automatic retrieval of aggregates via the @Aggregate annotation.
@@ -15,9 +15,11 @@ This library does not support embedded Neo4J instances.
 1. Fast class scanning on startup with Google Reflections.
 1. Efficient statement batching thanks to [Java Neo4J Client](https://github.com/inner-loop/java-neo4j-client) Connections.
 1. Simple mechanism to add database field conversion.
-1. Support for collection ordering via relationship properties.
+1. Support for collection ordering via relationship properties (Coming soon).
 
 ## Installation
+
+**Note hasn't been deployed to maven yet. Please build from source for now. **
 
 The OGM is written for and requires Java 8+ and Neo4J 2.2 Standalone Database.
 
@@ -79,19 +81,18 @@ or grouping semantics (e.g. order a list of objects by a relationship property c
 #Roadmap
 
 ## 0.1.x
-- Fix delete semantics
-- ~~Add indexing support~~
+- ~~Fix delete semantics~~
+- ~~Add support for indexing and constraints~~
+- ~~Fix Transaction behaviour (client)~~
+- Add List/Set/Array of Primitive Wrapper/String support
+- Add @Aggregate and @Include support which will automatically load aggregates and follow any fields in those Aggregates
+marked with @Include.
 
 ## 0.2.x
-- ~~Fix Transaction behaviour (client)~~
-- ~~Add support for indexing and constraints~~
-- Look at a way to add @Aggregate support
-
-## 0.3.x
-- Remove ```Long id``` implementation detail requirement from classes with javassist.
-
-##0.4.x
 - Add list ordering by relationship weight property.
 - Add map support by relationship property.
+
+## Further ahead
+- Remove ```Long id``` implementation detail requirement from classes with javassist.
 - Add Spring @Transactional/PlatformTransactionManager support
 - Add Guice Transaction support

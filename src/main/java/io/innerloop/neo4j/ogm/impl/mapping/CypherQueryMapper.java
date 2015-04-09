@@ -201,6 +201,81 @@ public class CypherQueryMapper
         return statement;
     }
 
+    /**
+     * This method will replace match(Class, Map).
+     *
+     * The intent of this method is to recursively traverse classes looking for aggregate annotations and including them
+     * in the match statement. If a class is marked with aggregate and includes an Include annotation on a field this
+     * method will continue to traverse until it hits a leaf or does not see another aggregate annotation.
+     */
+    public <T> GraphStatement match2(Class<T> type, Map<String, Object> parameters)
+    {
+        ClassMetadata<T> classMetadata = metadataMap.get(type);
+
+        // Add the parent thing to save
+        String query = "MATCH (a" + classMetadata.getLabelKey().asCypher() + ")";
+
+        int i = 1;
+        for (RelationshipMetadata rm : classMetadata.getRelationships())
+        {
+            Field f = rm.getField();
+            Class<?> cls = f.getType();
+            if (Iterable.class.isAssignableFrom(cls))
+            {
+                ParameterizedType t = (ParameterizedType)f.getGenericType();
+                cls = (Class<?>) t.getActualTypeArguments()[0];
+            }
+
+            if (!cls.isAnnotationPresent(Aggregate.class))
+            {
+                continue;
+            }
+
+            query += " OPTIONAL MATCH (a)-[r" + i + ":" + rm.getType() + "]-() ";
+            query += "WITH a, COLLECT(r" + i + ") as r" + i;
+            for (int j = 1; j < i; j++)
+            {
+                query += ", r" + j;
+            }
+            i++;
+        }
+
+        if (parameters != null)
+        {
+            query += " WHERE ";
+            int numParams = parameters.size();
+            for (String key : parameters.keySet())
+            {
+                query += "a." + key + " = {" + key + "}";
+
+                if (--numParams > 0)
+                {
+                    query += ", ";
+                }
+            }
+        }
+
+        query += " RETURN a";
+
+        for (int j = 1; j < i; j++)
+        {
+            query += ", r" + j;
+        }
+
+        GraphStatement statement = new GraphStatement(query);
+
+        if (parameters != null)
+        {
+            for (Map.Entry<String, Object> entry : parameters.entrySet())
+            {
+                statement.setParam(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return statement;
+    }
+
+
     public <T> GraphStatement match(Class<T> type, Map<String, Object> parameters)
     {
         ClassMetadata<T> classMetadata = metadataMap.get(type);
@@ -212,14 +287,14 @@ public class CypherQueryMapper
         for (RelationshipMetadata rm : classMetadata.getRelationships())
         {
             Field f = rm.getField();
-            Class<?> ty = f.getType();
-            if (Iterable.class.isAssignableFrom(ty))
+            Class<?> cls = f.getType();
+            if (Iterable.class.isAssignableFrom(cls))
             {
                 ParameterizedType t = (ParameterizedType)f.getGenericType();
-                ty = (Class<?>) t.getActualTypeArguments()[0];
+                cls = (Class<?>) t.getActualTypeArguments()[0];
             }
 
-            if (!ty.isAnnotationPresent(Aggregate.class))
+            if (!cls.isAnnotationPresent(Aggregate.class))
             {
                 continue;
             }
