@@ -147,31 +147,44 @@ public class EndToEndTests
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.cineasts");
         Session session = sessionFactory.getCurrentSession();
         Transaction transaction = session.getTransaction();
+        Actor keanu;
         try
         {
             transaction.begin();
 
-            Actor keanu = new Actor("Keanu Reeves");
+            keanu = new Actor("Keanu Reeves");
             Movie matrix = new Movie("Matrix", 1999);
             keanu.playedIn(matrix, "Neo");
             session.save(keanu);
-            session.flush();
-            session.delete(keanu);
-
-            List<Actor> actors = session.loadAll(Actor.class, "name", "Keanu Reeves");
-            assertEquals(0, actors.size());
-            List<Movie> movies = session.loadAll(Movie.class);
-            assertEquals(1, movies.size());
-            List<Role> roles = session.loadAll(Role.class);
-            assertEquals(1, roles.size());
-            Role role = roles.iterator().next();
-            //TODO: to fix this requires disconnecting the attached objects. the database seems like it has deleted the object.
-            assertNull(role.getActor());
             transaction.commit();
         }
         finally
         {
             session.close();
+        }
+
+        Session session2 = sessionFactory.getCurrentSession();
+        Transaction transaction2 = session2.getTransaction();
+        try
+        {
+            transaction2.begin();
+            session2.delete(keanu);
+            transaction2.flush();
+
+            List<Actor> actors = session2.loadAll(Actor.class, "name", "Keanu Reeves");
+            assertEquals(0, actors.size());
+            List<Movie> movies = session2.loadAll(Movie.class);
+            assertEquals(1, movies.size());
+            List<Role> roles = session2.loadAll(Role.class);
+            assertEquals(1, roles.size());
+            Role role = roles.iterator().next();
+            assertNull(role.getActor());
+            transaction2.commit();
+
+        }
+        finally
+        {
+            session2.close();
         }
 
     }

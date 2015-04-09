@@ -122,6 +122,7 @@ public class Session
         txn.flush();
         identityMap.refresh();
         newObjects.clear();
+        deletedObjects.clear();
     }
 
     public <T> List<T> query(Class<T> type, String cypher, Map<String, Object> parameters)
