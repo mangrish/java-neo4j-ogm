@@ -1,7 +1,7 @@
 java-neo4j-ogm
 ==============
 
-A Java Object Graph Mapper (OGM) for standalone Neo4J instances.
+A lightweight Java Object Graph Mapper (OGM) for standalone Neo4J instances.
 
 This library does not support embedded Neo4J instances.
 
@@ -15,7 +15,7 @@ This library does not support embedded Neo4J instances.
 1. Fast class scanning on startup with Google Reflections.
 1. Efficient statement batching thanks to [Java Neo4J Client](https://github.com/inner-loop/java-neo4j-client) Connections.
 1. Simple mechanism to add database field conversion.
-1. Support for collection ordering via relationship properties (Coming soon).
+1. Support for maps and collection ordering via relationship properties (Coming soon).
 
 ## Installation
 
@@ -80,19 +80,23 @@ or grouping semantics (e.g. order a list of objects by a relationship property c
 
 #Roadmap
 
-## 0.1.x
+## 0.1.x (NEXT)
 - ~~Fix delete semantics~~
 - ~~Add support for indexing and constraints~~
 - ~~Fix Transaction behaviour (client)~~
-- Add List/Set/Array of Primitive Wrapper/String support
+- ~~Add List/Set/Array of Primitive Wrapper/String support~~
 - Add @Aggregate and @Include support which will automatically load aggregates and follow any fields in those Aggregates
 marked with @Include.
+- Update documentation
 
 ## 0.2.x
+- Automatic registration of known convertible types
 - Add list ordering by relationship weight property.
 - Add map support by relationship property.
+- Introduce basic performance tests / introduce statement caching.
 
 ## Further ahead
-- Remove ```Long id``` implementation detail requirement from classes with javassist.
-- Add Spring @Transactional/PlatformTransactionManager support
-- Add Guice Transaction support
+- Remove required ```Long id``` implementation detail requirement from classes (with javassist).
+- Autocommit mode?
+- Add Spring @Transactional/PlatformTransactionManager support (separate repo)
+- Add Guice Transaction support (separate repo)

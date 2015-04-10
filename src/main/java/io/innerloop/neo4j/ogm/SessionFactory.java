@@ -35,16 +35,14 @@ public class SessionFactory
             try
             {
                 Connection connection = client.getConnection();
-                connection.add(index.index());
+                connection.add(index.create());
                 connection.commit();
             }
             catch (Neo4jClientException n4jce)
             {
                 // do nothing...
             }
-
         }
-
     }
 
     public Session getCurrentSession()

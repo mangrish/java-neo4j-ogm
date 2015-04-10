@@ -31,7 +31,7 @@ public class Index
         return new RowStatement("DROP INDEX ON :`" + label + "`(`" + propertyName + "`)");
     }
 
-    public Statement index()
+    public Statement create()
     {
         if (unique)
         {

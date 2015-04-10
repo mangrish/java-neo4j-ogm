@@ -28,7 +28,6 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
     compile group: 'io.innerloop', name:'java-neo4j-client', version: '0.2.0-SNAPSHOT', changing: true
     compile group: 'org.reflections', name: 'reflections', version: '0.9.9'
-    compile group: 'org.javassist', name:'javassist', version:'3.19.0-GA'
 }
 
 javadoc {
