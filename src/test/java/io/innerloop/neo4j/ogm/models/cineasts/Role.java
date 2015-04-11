@@ -1,6 +1,5 @@
 package io.innerloop.neo4j.ogm.models.cineasts;
 
-import io.innerloop.neo4j.ogm.annotations.Aggregate;
 import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.converters.UUIDConverter;
@@ -11,7 +10,6 @@ import java.util.UUID;
 /**
  * Created by markangrish on 17/12/2014.
  */
-@Aggregate
 public class Role
 {
     private Long id;

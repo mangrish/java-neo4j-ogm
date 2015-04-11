@@ -3,7 +3,6 @@ package io.innerloop.neo4j.ogm.impl.metadata;
 import com.google.common.base.CaseFormat;
 import com.google.common.primitives.Primitives;
 import io.innerloop.neo4j.client.spi.impl.rest.json.JSONObject;
-import io.innerloop.neo4j.ogm.annotations.Aggregate;
 import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.annotations.Indexed;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
@@ -49,8 +48,6 @@ public class ClassMetadata<T>
 
     private final NodeLabel labelKey;
 
-    private final boolean aggregate;
-
     private final Map<String, Index> indexes;
 
     private final Map<String, PropertyMetadata> propertyMetadata;
@@ -64,7 +61,6 @@ public class ClassMetadata<T>
         this.propertyMetadata = new HashMap<>();
         this.relationshipMetadata = new HashMap<>();
         this.indexes = new HashMap<>();
-        this.aggregate = type.isAnnotationPresent(Aggregate.class);
 
         for (Field field : ReflectionUtils.getFields(type))
         {
@@ -224,11 +220,6 @@ public class ClassMetadata<T>
     public PropertyMetadata getNeo4jIdField()
     {
         return neo4jIdField;
-    }
-
-    public boolean isAggregate()
-    {
-        return aggregate;
     }
 
     public long hash(T object)

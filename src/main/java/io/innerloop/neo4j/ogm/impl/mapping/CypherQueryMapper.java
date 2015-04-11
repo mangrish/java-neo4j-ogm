@@ -3,8 +3,7 @@ package io.innerloop.neo4j.ogm.impl.mapping;
 import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
-import io.innerloop.neo4j.ogm.annotations.Aggregate;
-import io.innerloop.neo4j.ogm.annotations.Include;
+import io.innerloop.neo4j.ogm.annotations.Fetch;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
@@ -14,7 +13,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +79,7 @@ public class CypherQueryMapper
                     cls = (Class<?>) t.getActualTypeArguments()[0];
                 }
 
-                if (!cls.isAnnotationPresent(Aggregate.class) && !f.isAnnotationPresent(Include.class))
+                if (!f.isAnnotationPresent(Fetch.class))
                 {
                     continue;
                 }
@@ -332,7 +330,7 @@ public class CypherQueryMapper
                 cls = (Class<?>) t.getActualTypeArguments()[0];
             }
 
-            if (!cls.isAnnotationPresent(Aggregate.class) && !f.isAnnotationPresent(Include.class))
+            if (!f.isAnnotationPresent(Fetch.class))
             {
                 continue;
             }
