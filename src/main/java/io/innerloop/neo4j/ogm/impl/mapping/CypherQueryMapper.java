@@ -3,6 +3,7 @@ package io.innerloop.neo4j.ogm.impl.mapping;
 import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
+import io.innerloop.neo4j.ogm.annotations.Aggregate;
 import io.innerloop.neo4j.ogm.annotations.Fetch;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
@@ -79,7 +80,7 @@ public class CypherQueryMapper
                     cls = (Class<?>) t.getActualTypeArguments()[0];
                 }
 
-                if (!f.isAnnotationPresent(Fetch.class))
+                if (!cls.isAnnotationPresent(Aggregate.class) && !f.isAnnotationPresent(Fetch.class))
                 {
                     continue;
                 }
@@ -297,76 +298,6 @@ public class CypherQueryMapper
     public RowStatement executeRowSet(String cypher, Map<String, Object> parameters)
     {
         RowStatement statement = new RowStatement(cypher);
-
-        if (parameters != null)
-        {
-            for (Map.Entry<String, Object> entry : parameters.entrySet())
-            {
-                statement.setParam(entry.getKey(), entry.getValue());
-            }
-        }
-
-        return statement;
-    }
-
-
-    public <T> GraphStatement match2(Class<T> type, Map<String, Object> parameters)
-    {
-        ClassMetadata<T> classMetadata = metadataMap.get(type);
-
-        String currentAlpha = "a";
-
-        // Add the parent thing to save
-        String query = "MATCH (" + currentAlpha + classMetadata.getLabelKey().asCypher() + ")";
-
-        int i = 1;
-        for (RelationshipMetadata rm : classMetadata.getRelationships())
-        {
-            Field f = rm.getField();
-            Class<?> cls = f.getType();
-            if (Iterable.class.isAssignableFrom(cls))
-            {
-                ParameterizedType t = (ParameterizedType) f.getGenericType();
-                cls = (Class<?>) t.getActualTypeArguments()[0];
-            }
-
-            if (!f.isAnnotationPresent(Fetch.class))
-            {
-                continue;
-            }
-
-            query += " OPTIONAL MATCH (" + currentAlpha + ")-[r" + i + ":" + rm.getType() + "]-() ";
-            query += "WITH " + currentAlpha + ", COLLECT(r" + i + ") as r" + i;
-            for (int j = 1; j < i; j++)
-            {
-                query += ", r" + j;
-            }
-            i++;
-        }
-
-        if (parameters != null)
-        {
-            query += " WHERE ";
-            int numParams = parameters.size();
-            for (String key : parameters.keySet())
-            {
-                query += "a." + key + " = {" + key + "}";
-
-                if (--numParams > 0)
-                {
-                    query += ", ";
-                }
-            }
-        }
-
-        query += " RETURN " + currentAlpha;
-
-        for (int j = 1; j < i; j++)
-        {
-            query += ", r" + j;
-        }
-
-        GraphStatement statement = new GraphStatement(query);
 
         if (parameters != null)
         {
