@@ -26,7 +26,8 @@ public class NodeLabel
         for (String label : labels)
         {
             result += ":" + label;
-        } return result;
+        }
+        return result;
     }
 
     @Override
@@ -50,15 +51,13 @@ public class NodeLabel
     @Override
     public int hashCode()
     {
-        return labels != null ? Arrays.deepHashCode(labels) : 0;
+        return Arrays.deepHashCode(labels);
     }
 
 
     @Override
     public String toString()
     {
-        return "MetaDataLabelKey{" +
-               "labels=" + Arrays.toString(labels) +
-               '}';
+        return "NodeLabel<" + asCypher() + ">";
     }
 }

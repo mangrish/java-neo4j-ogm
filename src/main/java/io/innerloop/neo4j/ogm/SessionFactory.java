@@ -5,6 +5,8 @@ import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Neo4jClientException;
 import io.innerloop.neo4j.ogm.impl.index.Index;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
 
 /**
  * Created by markangrish on 18/12/2014.
@@ -17,7 +19,8 @@ public class SessionFactory
 
     public SessionFactory(Neo4jClient client, String... packages)
     {
-        this.metadataMap = new MetadataMap(packages);
+        Reflections reflections = new Reflections(packages, new SubTypesScanner(false));
+        this.metadataMap = new MetadataMap(reflections);
         this.client = client;
         buildIndexes();
     }

@@ -33,13 +33,11 @@ public class MetadataMap
 
     private Map<NodeLabel, ClassMetadata<?>> lookupBySortedMultiLabel;
 
-    public MetadataMap(String... packages)
+    public MetadataMap(Reflections reflections)
     {
         this.lookupByClass = new HashMap<>();
         this.lookupByLabel = new HashMap<>();
         this.lookupBySortedMultiLabel = new HashMap<>();
-
-        Reflections reflections = new Reflections(packages, new SubTypesScanner(false));
 
         List<Class<?>> classesToProcess = new ArrayList<>();
         List<Class<?>> interfacesToProcess = new ArrayList<>();
@@ -84,20 +82,19 @@ public class MetadataMap
             labels.add(primaryLabel);
 
             Class<?> superClass = cls.getSuperclass();
+            Class<?>[] interfaces = cls.getInterfaces();
 
             while (superClass != null && !superClass.getName().equals("java.lang.Object"))
             {
-                Class<?>[] interfaces = cls.getInterfaces();
-
-                for (Class<?> interfaceCls : interfaces)
-                {
-                    if (interfaceCls.isInterface() && interfacesToProcess.contains(interfaceCls))
-                    {
-                        labels.add(primaryLabel);
-                    }
-                }
                 labels.add(superClass.getSimpleName());
                 superClass = superClass.getSuperclass();
+            }
+            for (Class<?> interfaceCls : interfaces)
+            {
+                if (interfaceCls.isInterface() && interfacesToProcess.contains(interfaceCls))
+                {
+                    labels.add(interfaceCls.getSimpleName());
+                }
             }
 
             String[] labelArray = labels.toArray(new String[labels.size()]);
