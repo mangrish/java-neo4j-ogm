@@ -19,8 +19,12 @@ public class SessionFactory
     {
         this.metadataMap = new MetadataMap(packages);
         this.client = client;
+        buildIndexes();
+    }
 
-        for (Index index : this.metadataMap.getIndexes())
+    private void buildIndexes()
+    {
+        for (Index index : metadataMap.getIndexes())
         {
             try
             {

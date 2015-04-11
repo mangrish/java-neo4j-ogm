@@ -42,6 +42,7 @@ public class MetadataMap
         Reflections reflections = new Reflections(packages, new SubTypesScanner(false));
 
         List<Class<?>> classesToProcess = new ArrayList<>();
+        List<Class<?>> interfacesToProcess = new ArrayList<>();
 
         for (String type : reflections.getAllTypes())
         {
@@ -49,16 +50,22 @@ public class MetadataMap
             {
                 Class<?> aClass = Class.forName(type);
 
-                if (aClass.isAnnotationPresent(Transient.class) || aClass.isInterface() || aClass.isAnnotation() ||
-                    aClass.isEnum() || isInnerClass(aClass) || aClass.isMemberClass() || aClass.isAnonymousClass() ||
-                    aClass.isLocalClass() ||
-                    Throwable.class.isAssignableFrom(aClass))
+                if (aClass.isInterface())
+                {
+                    interfacesToProcess.add(aClass);
+                }
+                else if (aClass.isAnnotationPresent(Transient.class) || aClass.isAnnotation() ||
+                         aClass.isEnum() || isInnerClass(aClass) || aClass.isMemberClass() ||
+                         aClass.isAnonymousClass() ||
+                         aClass.isLocalClass() ||
+                         Throwable.class.isAssignableFrom(aClass))
                 {
                     LOG.info("Ignoring class from OGM: [{}]", aClass.getName());
-                    continue;
                 }
-
-                classesToProcess.add(aClass);
+                else
+                {
+                    classesToProcess.add(aClass);
+                }
             }
             catch (ClassNotFoundException cnfe)
             {
@@ -80,6 +87,15 @@ public class MetadataMap
 
             while (superClass != null && !superClass.getName().equals("java.lang.Object"))
             {
+                Class<?>[] interfaces = cls.getInterfaces();
+
+                for (Class<?> interfaceCls : interfaces)
+                {
+                    if (interfaceCls.isInterface() && interfacesToProcess.contains(interfaceCls))
+                    {
+                        labels.add(primaryLabel);
+                    }
+                }
                 labels.add(superClass.getSimpleName());
                 superClass = superClass.getSuperclass();
             }
