@@ -6,7 +6,7 @@ import io.innerloop.neo4j.client.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
-import io.innerloop.neo4j.ogm.impl.metadata.SortedMultiLabel;
+import io.innerloop.neo4j.ogm.impl.metadata.NodeLabel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +46,7 @@ public class GraphResultMapper
                 Arrays.sort(labels);
             }
 
-            SortedMultiLabel key = new SortedMultiLabel(labels);
+            NodeLabel key = new NodeLabel(labels);
             ClassMetadata clsMetadata = metadataMap.get(key);
 
             if (clsMetadata == null)

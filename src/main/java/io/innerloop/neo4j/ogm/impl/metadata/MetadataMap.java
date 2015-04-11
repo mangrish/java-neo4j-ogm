@@ -31,7 +31,7 @@ public class MetadataMap
 
     private Map<String, ClassMetadata<?>> lookupByLabel;
 
-    private Map<SortedMultiLabel, ClassMetadata<?>> lookupBySortedMultiLabel;
+    private Map<NodeLabel, ClassMetadata<?>> lookupBySortedMultiLabel;
 
     public MetadataMap(String... packages)
     {
@@ -101,7 +101,7 @@ public class MetadataMap
             }
 
             String[] labelArray = labels.toArray(new String[labels.size()]);
-            SortedMultiLabel key = new SortedMultiLabel(labelArray);
+            NodeLabel key = new NodeLabel(labelArray);
             ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, classesToProcess, primaryLabel, key);
 
             lookupByLabel.put(primaryLabel, classMetadata);
@@ -115,9 +115,9 @@ public class MetadataMap
         return lookupByLabel.get(label);
     }
 
-    public ClassMetadata get(SortedMultiLabel sortedMultiLabel)
+    public ClassMetadata get(NodeLabel nodeLabel)
     {
-        return lookupBySortedMultiLabel.get(sortedMultiLabel);
+        return lookupBySortedMultiLabel.get(nodeLabel);
     }
 
     public <T> ClassMetadata<T> get(Class<T> type)

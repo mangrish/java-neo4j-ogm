@@ -5,11 +5,11 @@ import java.util.Arrays;
 /**
  * Created by markangrish on 14/11/2014.
  */
-public class SortedMultiLabel
+public class NodeLabel
 {
     private final String[] labels;
 
-    public SortedMultiLabel(String[] labels)
+    public NodeLabel(String[] labels)
     {
         Arrays.sort(labels);
         this.labels = labels;
@@ -41,7 +41,7 @@ public class SortedMultiLabel
             return false;
         }
 
-        SortedMultiLabel that = (SortedMultiLabel) o;
+        NodeLabel that = (NodeLabel) o;
 
         return Arrays.deepEquals(labels, that.labels);
 

@@ -48,7 +48,7 @@ public class ClassMetadata<T>
 
     private final String primaryLabel;
 
-    private final SortedMultiLabel labelKey;
+    private final NodeLabel labelKey;
 
     private final Map<String, Index> indexes;
 
@@ -58,7 +58,7 @@ public class ClassMetadata<T>
 
     private PropertyMetadata neo4jIdField;
 
-    public ClassMetadata(Class<T> type, List<Class<?>> metadataMap, String primaryLabel, SortedMultiLabel labelKey)
+    public ClassMetadata(Class<T> type, List<Class<?>> metadataMap, String primaryLabel, NodeLabel labelKey)
     {
         this.type = type;
         this.primaryLabel = primaryLabel;
@@ -166,7 +166,7 @@ public class ClassMetadata<T>
     }
 
 
-    public SortedMultiLabel getLabelKey()
+    public NodeLabel getLabelKey()
     {
         return labelKey;
     }
