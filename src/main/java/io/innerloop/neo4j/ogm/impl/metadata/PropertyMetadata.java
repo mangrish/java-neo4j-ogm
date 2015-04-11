@@ -2,6 +2,7 @@ package io.innerloop.neo4j.ogm.impl.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.converters.Converter;
+import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +41,7 @@ public class PropertyMetadata
         this.field = field;
         if (Iterable.class.isAssignableFrom(type))
         {
-            ParameterizedType t = (ParameterizedType) field.getGenericType();
-            paramterizedType = (Class<?>) t.getActualTypeArguments()[0];
+            paramterizedType = ReflectionUtils.getParameterizedType(field);
         }
         if (field.isAnnotationPresent(Convert.class))
         {
@@ -74,6 +74,11 @@ public class PropertyMetadata
     public String getName()
     {
         return name;
+    }
+
+    public Class<?> getParamterizedType()
+    {
+        return paramterizedType;
     }
 
     public Object toJson(Object entity)

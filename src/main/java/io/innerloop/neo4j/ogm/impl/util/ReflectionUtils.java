@@ -3,6 +3,7 @@ package io.innerloop.neo4j.ogm.impl.util;
 import com.google.common.collect.Lists;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.List;
 
 /**
@@ -10,53 +11,6 @@ import java.util.List;
  */
 public class ReflectionUtils
 {
-
-    public static Field getField(Class clazz, String fieldName)
-    {
-        try
-        {
-            return clazz.getDeclaredField(fieldName);
-        }
-        catch (NoSuchFieldException e)
-        {
-            Class superClass = clazz.getSuperclass();
-            if (superClass == null)
-            {
-                return null;
-            }
-            else
-            {
-                return getField(superClass, fieldName);
-            }
-        }
-    }
-
-
-    public static void setField(Class<?> clazz, String fieldName, Object value, Object object)
-    {
-        if (value == null)
-        {
-            return;
-        }
-
-        try
-        {
-            Field field = clazz.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            Class<?> type = field.getType();
-            //            Object convertedValue = convert(type, value);
-            field.set(object, value);
-        }
-        catch (NoSuchFieldException | IllegalAccessException e)
-        {
-            Class superClass = clazz.getSuperclass();
-            if (superClass != null)
-            {
-                setField(superClass, fieldName, value, object);
-            }
-        }
-    }
-
 
     public static Iterable<Field> getFields(Class<?> clazz)
     {
@@ -71,5 +25,11 @@ public class ReflectionUtils
         }
 
         return currentClassFields;
+    }
+
+    public static Class<?> getParameterizedType(Field field)
+    {
+        ParameterizedType t = (ParameterizedType) field.getGenericType();
+        return (Class<?>) t.getActualTypeArguments()[0];
     }
 }

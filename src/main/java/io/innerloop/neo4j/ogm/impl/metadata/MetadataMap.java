@@ -28,15 +28,12 @@ public class MetadataMap
 
     private Map<Class<?>, ClassMetadata> lookupByClass;
 
-    private Map<String, ClassMetadata<?>> lookupByLabel;
-
-    private Map<NodeLabel, ClassMetadata<?>> lookupBySortedMultiLabel;
+    private Map<NodeLabel, ClassMetadata<?>> lookupByNodeLabel;
 
     public MetadataMap(Reflections reflections)
     {
         this.lookupByClass = new HashMap<>();
-        this.lookupByLabel = new HashMap<>();
-        this.lookupBySortedMultiLabel = new HashMap<>();
+        this.lookupByNodeLabel = new HashMap<>();
 
         List<Class<?>> classesToProcess = new ArrayList<>();
         List<Class<?>> interfacesToProcess = new ArrayList<>();
@@ -101,9 +98,8 @@ public class MetadataMap
             NodeLabel key = new NodeLabel(labelArray);
             ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, classesToProcess, primaryLabel, key);
 
-            lookupByLabel.put(primaryLabel, classMetadata);
             lookupByClass.put(cls, classMetadata);
-            lookupBySortedMultiLabel.put(key, classMetadata);
+            lookupByNodeLabel.put(key, classMetadata);
         }
     }
 
@@ -120,14 +116,9 @@ public class MetadataMap
         }
     }
 
-    public ClassMetadata get(String label)
-    {
-        return lookupByLabel.get(label);
-    }
-
     public ClassMetadata get(NodeLabel nodeLabel)
     {
-        return lookupBySortedMultiLabel.get(nodeLabel);
+        return lookupByNodeLabel.get(nodeLabel);
     }
 
     public <T> ClassMetadata<T> get(Class<T> type)

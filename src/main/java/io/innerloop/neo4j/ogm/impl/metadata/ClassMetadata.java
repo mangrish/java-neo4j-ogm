@@ -3,6 +3,7 @@ package io.innerloop.neo4j.ogm.impl.metadata;
 import com.google.common.base.CaseFormat;
 import com.google.common.primitives.Primitives;
 import io.innerloop.neo4j.client.spi.impl.rest.json.JSONObject;
+import io.innerloop.neo4j.ogm.annotations.Aggregate;
 import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.annotations.Indexed;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
@@ -14,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -45,9 +45,11 @@ public class ClassMetadata<T>
 
     private PropertyMetadata primaryField;
 
-    private final String primaryLabel;
+    private PropertyMetadata neo4jIdField;
 
     private final NodeLabel labelKey;
+
+    private final boolean aggregate;
 
     private final Map<String, Index> indexes;
 
@@ -55,16 +57,14 @@ public class ClassMetadata<T>
 
     private final Map<String, RelationshipMetadata> relationshipMetadata;
 
-    private PropertyMetadata neo4jIdField;
-
-    public ClassMetadata(Class<T> type, List<Class<?>> metadataMap, String primaryLabel, NodeLabel labelKey)
+    public ClassMetadata(Class<T> type, List<Class<?>> managedClasses, String primaryLabel, NodeLabel labelKey)
     {
         this.type = type;
-        this.primaryLabel = primaryLabel;
         this.labelKey = labelKey;
         this.propertyMetadata = new HashMap<>();
         this.relationshipMetadata = new HashMap<>();
         this.indexes = new HashMap<>();
+        this.aggregate = type.isAnnotationPresent(Aggregate.class);
 
         for (Field field : ReflectionUtils.getFields(type))
         {
@@ -72,71 +72,75 @@ public class ClassMetadata<T>
             {
                 continue;
             }
-            else if (field.getName().equals("id"))
+
+            Class<?> fieldClass = field.getType();
+            String fieldName = field.getName();
+            boolean isCollectionType = Iterable.class.isAssignableFrom(fieldClass);
+
+            if (fieldName.equals("id") && fieldClass.equals(Long.class))
             {
-                if (!field.getType().equals(Long.class))
-                {
-                    throw new IllegalStateException("No object called 'id' with type Long found on class [" +
-                                                    type.getName() + "]");
-                }
-                PropertyMetadata pm = new PropertyMetadata(field);
-                this.neo4jIdField = pm;
+                this.neo4jIdField = new PropertyMetadata(field);
+                continue;
             }
-            else if (field.isAnnotationPresent(Relationship.class) &&
-                     StringUtils.isNotEmpty(field.getAnnotation(Relationship.class).type()))
+
+            if (field.isAnnotationPresent(Id.class))
             {
-                Relationship relationship = field.getAnnotation(Relationship.class);
-                RelationshipMetadata rm = new RelationshipMetadata(relationship.type(),
-                                                                   relationship.direction(),
-                                                                   field);
+                this.primaryField = new PropertyMetadata(field);
+                this.propertyMetadata.put(fieldName, primaryField);
+                this.indexes.put(fieldName, new Index(primaryLabel, fieldName, true));
+                continue;
+            }
+
+            Relationship relationship = field.getAnnotation(Relationship.class);
+            if (relationship != null)
+            {
+                String relationshipType = StringUtils.isNotEmpty(relationship.type()) ?
+                                                  relationship.type() :
+                                                  CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, fieldName);
+                RelationshipMetadata rm = new RelationshipMetadata(relationshipType, relationship.direction(), field);
+                relationshipMetadata.put(rm.getType(), rm);
+                continue;
+            }
+
+            Class parametrizedCls = null;
+            if (isCollectionType)
+            {
+                parametrizedCls = ReflectionUtils.getParameterizedType(field);
+            }
+
+            boolean isRelationshipClass = false;
+            for (Class<?> c : managedClasses)
+            {
+                if (fieldClass.isAssignableFrom(c))
+                {
+                    isRelationshipClass = true;
+                }
+            }
+
+            if ((isCollectionType && (parametrizedCls != null && !(Primitives.isWrapperType(parametrizedCls) ||
+                                                                   String.class.isAssignableFrom(parametrizedCls)))) ||
+                isRelationshipClass)
+            {
+                String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, fieldName);
+                RelationshipMetadata rm = new RelationshipMetadata(relType, Relationship.Direction.UNDIRECTED, field);
                 relationshipMetadata.put(rm.getType(), rm);
             }
             else
             {
-                Class cls = field.getType();
-                Class parametrizedCls = null;
-                if (Iterable.class.isAssignableFrom(cls))
-                {
-                    ParameterizedType t = (ParameterizedType) field.getGenericType();
-                    parametrizedCls = (Class<?>) t.getActualTypeArguments()[0];
-                }
-                boolean isRelationshipClass = false;
-                for (Class<?> c : metadataMap)
-                {
-                    if (cls.isAssignableFrom(c))
-                    {
-                        isRelationshipClass = true;
-                    }
-                }
+                PropertyMetadata pm = new PropertyMetadata(field);
+                propertyMetadata.put(fieldName, pm);
 
-                if (Iterable.class.isAssignableFrom(cls) && (parametrizedCls != null &&
-                     !(Primitives.isWrapperType(parametrizedCls) || String.class.isAssignableFrom(parametrizedCls))) || isRelationshipClass)
+                if (fieldName.equals("uuid"))
                 {
-                    String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, field.getName());
-                    relationshipMetadata.put(relType,
-                                             new RelationshipMetadata(relType,
-                                                                      Relationship.Direction.UNDIRECTED,
-                                                                      field));
-
-                }
-                else
-                {
-                    String fieldName = field.getName();
-                    PropertyMetadata pm = new PropertyMetadata(field);
-                    propertyMetadata.put(fieldName, pm);
-
-                    if (fieldName.equals("uuid") || field.isAnnotationPresent(Id.class))
-                    {
-                        this.primaryField = pm;
-                        this.indexes.put(fieldName, new Index(primaryLabel, fieldName, true));
-                    }
+                    this.primaryField = pm;
+                    this.indexes.put(fieldName, new Index(primaryLabel, fieldName, true));
                 }
             }
 
             Indexed indexed = field.getAnnotation(Indexed.class);
             if (indexed != null)
             {
-                this.indexes.put(field.getName(), new Index(primaryLabel, field.getName(), indexed.unique()));
+                this.indexes.put(fieldName, new Index(primaryLabel, fieldName, indexed.unique()));
             }
         }
 
@@ -167,11 +171,7 @@ public class ClassMetadata<T>
     public JSONObject toJsonObject(Object entity)
     {
         JSONObject result = new JSONObject();
-
-        for (PropertyMetadata pm : propertyMetadata.values())
-        {
-            result.put(pm.getName(), pm.toJson(entity));
-        }
+        propertyMetadata.values().forEach(pm -> result.put(pm.getName(), pm.toJson(entity)));
         LOG.trace("Converted object of type: [{}] to JSON: {}", type.getSimpleName(), result);
         return result;
     }
@@ -187,8 +187,6 @@ public class ClassMetadata<T>
         {
             LOG.debug("Instantiating new instance of: [{}]", type.getSimpleName());
             T instance = type.newInstance();
-
-            //TODO: could get rid of this if dirty updates dont need it
             neo4jIdField.setValue(id, instance);
 
             for (Map.Entry<String, Object> entry : properties.entrySet())
@@ -213,11 +211,6 @@ public class ClassMetadata<T>
         }
     }
 
-    public Class<T> getType()
-    {
-        return type;
-    }
-
     public Iterable<RelationshipMetadata> getRelationships()
     {
         return relationshipMetadata.values();
@@ -231,6 +224,11 @@ public class ClassMetadata<T>
     public PropertyMetadata getNeo4jIdField()
     {
         return neo4jIdField;
+    }
+
+    public boolean isAggregate()
+    {
+        return aggregate;
     }
 
     public long hash(T object)
