@@ -5,7 +5,6 @@ import com.google.common.primitives.Primitives;
 import io.innerloop.neo4j.client.spi.impl.rest.json.JSONObject;
 import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.annotations.Indexed;
-import io.innerloop.neo4j.ogm.annotations.Property;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.index.Index;
 import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
@@ -82,12 +81,6 @@ public class ClassMetadata<T>
                 }
                 PropertyMetadata pm = new PropertyMetadata(field);
                 this.neo4jIdField = pm;
-            }
-            else if (field.isAnnotationPresent(Property.class) &&
-                     StringUtils.isNotEmpty(field.getAnnotation(Property.class).name()))
-            {
-                PropertyMetadata pm = new PropertyMetadata(field.getAnnotation(Property.class).name(), field);
-                propertyMetadata.put(pm.getName(), pm);
             }
             else if (field.isAnnotationPresent(Relationship.class) &&
                      StringUtils.isNotEmpty(field.getAnnotation(Relationship.class).type()))

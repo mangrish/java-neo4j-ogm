@@ -12,6 +12,5 @@ import java.lang.annotation.Target;
 public @interface Convert
 {
     Class value();
-
 }
 

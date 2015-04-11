@@ -3,7 +3,6 @@ package io.innerloop.neo4j.ogm.impl.metadata;
 import io.innerloop.neo4j.ogm.annotations.Transient;
 import io.innerloop.neo4j.ogm.impl.index.Index;
 import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +49,7 @@ public class MetadataMap
 
                 if (aClass.isInterface())
                 {
+                    LOG.trace("Marking interface as Processable: [{}]", aClass.getName());
                     interfacesToProcess.add(aClass);
                 }
                 else if (aClass.isAnnotationPresent(Transient.class) || aClass.isAnnotation() ||
@@ -58,10 +58,11 @@ public class MetadataMap
                          aClass.isLocalClass() ||
                          Throwable.class.isAssignableFrom(aClass))
                 {
-                    LOG.info("Ignoring class from OGM: [{}]", aClass.getName());
+                    LOG.debug("Ignoring class from OGM: [{}]", aClass.getName());
                 }
                 else
                 {
+                    LOG.trace("Marking class as Processable: [{}]", aClass.getName());
                     classesToProcess.add(aClass);
                 }
             }
@@ -74,7 +75,6 @@ public class MetadataMap
 
         for (Class<?> cls : classesToProcess)
         {
-            LOG.debug("Adding class to OGM: [{}]", cls.getSimpleName());
 
             List<String> labels = new ArrayList<>();
 
@@ -82,20 +82,20 @@ public class MetadataMap
             labels.add(primaryLabel);
 
             Class<?> superClass = cls.getSuperclass();
-            Class<?>[] interfaces = cls.getInterfaces();
 
             while (superClass != null && !superClass.getName().equals("java.lang.Object"))
             {
+                if (!classesToProcess.contains(superClass))
+                {
+                    throw new RuntimeException("Superclass of [" + cls.getName() + "]: [" + superClass.getName() +
+                                               "] is not in managed packages.");
+                }
                 labels.add(superClass.getSimpleName());
+                addInterfaceLabels(superClass, labels, interfacesToProcess);
                 superClass = superClass.getSuperclass();
             }
-            for (Class<?> interfaceCls : interfaces)
-            {
-                if (interfaceCls.isInterface() && interfacesToProcess.contains(interfaceCls))
-                {
-                    labels.add(interfaceCls.getSimpleName());
-                }
-            }
+
+            addInterfaceLabels(cls, labels, interfacesToProcess);
 
             String[] labelArray = labels.toArray(new String[labels.size()]);
             NodeLabel key = new NodeLabel(labelArray);
@@ -104,6 +104,19 @@ public class MetadataMap
             lookupByLabel.put(primaryLabel, classMetadata);
             lookupByClass.put(cls, classMetadata);
             lookupBySortedMultiLabel.put(key, classMetadata);
+        }
+    }
+
+
+    private void addInterfaceLabels(Class<?> cls, List<String> labels, List<Class<?>> interfacesToProcess)
+    {
+        Class<?>[] interfaces = cls.getInterfaces();
+        for (Class<?> interfaceCls : interfaces)
+        {
+            if (interfaceCls.isInterface() && interfacesToProcess.contains(interfaceCls))
+            {
+                labels.add(interfaceCls.getSimpleName());
+            }
         }
     }
 

@@ -49,7 +49,7 @@ public class EndToEndTests
     public static void oneTimeSetUp()
     {
         LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
-        Logger rootLogger = loggerContext.getLogger("io.innerloop.neo4j.client");
+        Logger rootLogger = loggerContext.getLogger("io.innerloop.neo4j");
         rootLogger.setLevel(Level.DEBUG);
     }
 
