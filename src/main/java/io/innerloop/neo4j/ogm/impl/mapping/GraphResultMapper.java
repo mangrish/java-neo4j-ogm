@@ -82,40 +82,37 @@ public class GraphResultMapper
                 continue;
             }
 
-            try
-            {
-                String relationshipType = relationship.getType();
-                ClassMetadata clsMetadata = metadataMap.get(start);
-                RelationshipMetadata rm = clsMetadata.getRelationship(relationshipType);
+            String relationshipType = relationship.getType();
+            ClassMetadata clsMetadata = metadataMap.get(start);
+            RelationshipMetadata rm = clsMetadata.getRelationship(relationshipType);
 
-                if (rm.isCollection())
+            if (rm.isCollection())
+            {
+                Collection collection = (Collection) rm.getValue(start);
+                if (collection == null)
                 {
-                    Collection collection = (Collection) rm.getField().get(start);
-                    if (collection == null)
+                    if (Set.class.isAssignableFrom(rm.getType()))
                     {
-                        if (Set.class.isAssignableFrom(rm.getField().getType()))
-                        {
-                            collection = new HashSet<>();
-                        }
-                        else //if (List.class.isAssignableFrom(rm.getField().getType()))
-                        {
-                            collection = new ArrayList<>();
-                        }
-
-                        rm.setValue(collection, start);
+                        collection = new HashSet<>();
                     }
-                    collection.add(end);
-                }
-                else
-                {
-                    rm.setValue(end, start);
-                }
+                    else if (List.class.isAssignableFrom(rm.getType()))
+                    {
+                        collection = new ArrayList<>();
+                    }
+                    else
+                    {
+                        throw new RuntimeException("Unsupported Collection type [" + rm.getType().getName() + "]");
+                    }
 
+                    rm.setValue(collection, start);
+                }
+                collection.add(end);
             }
-            catch (IllegalAccessException e)
+            else
             {
-                throw new RuntimeException("No accessible relationship exists between: [" + start + "] and [" + end + "]" , e);
+                rm.setValue(end, start);
             }
+
         }
         return results;
     }

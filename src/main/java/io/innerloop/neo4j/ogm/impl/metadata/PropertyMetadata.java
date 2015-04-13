@@ -7,11 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Created by markangrish on 11/11/2014.
@@ -26,21 +21,23 @@ public class PropertyMetadata
 
     private final Class<?> type;
 
+    private boolean iterable;
+
     private Class<?> paramterizedType;
 
     private Converter converter;
 
     private final Field field;
 
-
-    public PropertyMetadata(String name, Field field)
+    public PropertyMetadata(Field field)
     {
-        this.name = name;
+        this.name = field.getName();
         this.fieldName = field.getName();
         this.type = field.getType();
         this.field = field;
         if (Iterable.class.isAssignableFrom(type))
         {
+            iterable = true;
             paramterizedType = ReflectionUtils.getParameterizedType(field);
         }
         if (field.isAnnotationPresent(Convert.class))
@@ -66,40 +63,19 @@ public class PropertyMetadata
                   field.getDeclaringClass());
     }
 
-    public PropertyMetadata(Field field)
-    {
-        this(field.getName(), field);
-    }
-
     public String getName()
     {
         return name;
     }
 
+    public boolean isIterable()
+    {
+        return iterable;
+    }
+
     public Class<?> getParamterizedType()
     {
         return paramterizedType;
-    }
-
-    public Object toJson(Object entity)
-    {
-        Object o;
-        try
-        {
-            o = field.get(entity);
-
-            if (converter != null && o != null)
-            {
-                o = converter.serialize(o);
-            }
-        }
-        catch (IllegalAccessException e)
-        {
-            throw new RuntimeException("Could not access field: [" + fieldName + "] on class: [" +
-                                       field.getDeclaringClass() +
-                                       "]. Does this field exist and is it accessible?", e);
-        }
-        return o;
     }
 
     public void setValue(Object value, Object instance)
@@ -117,15 +93,7 @@ public class PropertyMetadata
                 {
                     val = Enum.valueOf((Class<Enum>) type, (String) value);
                 }
-                else if (List.class.isAssignableFrom(type))
-                {
-                    val = new ArrayList<>();
-                }
-                else if (Set.class.isAssignableFrom(type))
-                {
-                    val = new HashSet<>();
-                }
-                else if (Long.class.isAssignableFrom(type) && value != null)
+                else if (Long.class.isAssignableFrom(type))
                 {
                     val = ((Number) value).longValue();
                 }
@@ -157,6 +125,10 @@ public class PropertyMetadata
         try
         {
             o = field.get(ref);
+            if (converter != null && o != null)
+            {
+                o = converter.serialize(o);
+            }
             LOG.debug("Field [{}] of type: [{}] RETRIEVED with value: [{}].",
                       field.getName(),
                       field.getType().getSimpleName(),
@@ -166,7 +138,7 @@ public class PropertyMetadata
         {
             throw new RuntimeException("Could get the value of field: [" + fieldName + "] on class: [" +
                                        field.getDeclaringClass() +
-                                       "] for object [" + ref + "]", e);
+                                       "] for object [" + ref + "]. Does this field exist and is it accessible?", e);
         }
         return o;
     }

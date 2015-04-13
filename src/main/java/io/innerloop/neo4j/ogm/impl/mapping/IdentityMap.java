@@ -101,8 +101,8 @@ public class IdentityMap
     public void addNew(Object ref, Statement statement)
     {
         ClassMetadata<Object> metaData = metadataMap.get(ref);
-        Object primaryKey = metaData.getPrimaryField().getValue(ref);
-        String key = Arrays.toString(metaData.getLabelKey().getLabels()) + ":" + primaryKey;
+        Object primaryKey = metaData.getPrimaryIdField().getValue(ref);
+        String key = Arrays.toString(metaData.getNodeLabel().getLabels()) + ":" + primaryKey;
 
         if (!newObjects.containsKey(key))
         {

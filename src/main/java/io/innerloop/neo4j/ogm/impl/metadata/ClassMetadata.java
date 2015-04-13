@@ -43,11 +43,11 @@ public class ClassMetadata<T>
 
     private final Class<T> type;
 
-    private PropertyMetadata primaryField;
+    private PropertyMetadata primaryIdField;
 
     private PropertyMetadata neo4jIdField;
 
-    private final NodeLabel labelKey;
+    private final NodeLabel nodeLabel;
 
     private final boolean aggregate;
 
@@ -57,16 +57,16 @@ public class ClassMetadata<T>
 
     private final Map<String, RelationshipMetadata> relationshipMetadata;
 
-    public ClassMetadata(Class<T> type, List<Class<?>> managedClasses, String primaryLabel, NodeLabel labelKey)
+    public ClassMetadata(Class<T> type, List<Class<?>> managedClasses, String primaryLabel, NodeLabel nodeLabel)
     {
         this.type = type;
-        this.labelKey = labelKey;
+        this.nodeLabel = nodeLabel;
         this.propertyMetadata = new HashMap<>();
         this.relationshipMetadata = new HashMap<>();
         this.indexes = new HashMap<>();
         this.aggregate = type.isAnnotationPresent(Aggregate.class);
 
-        for (Field field : ReflectionUtils.getFields(type))
+        for (Field field : ReflectionUtils.getAllFields(type))
         {
             if (Modifier.isTransient(field.getModifiers()) || Modifier.isStatic(field.getModifiers()))
             {
@@ -85,8 +85,8 @@ public class ClassMetadata<T>
 
             if (field.isAnnotationPresent(Id.class))
             {
-                this.primaryField = new PropertyMetadata(field);
-                this.propertyMetadata.put(fieldName, primaryField);
+                this.primaryIdField = new PropertyMetadata(field);
+                this.propertyMetadata.put(fieldName, primaryIdField);
                 this.indexes.put(fieldName, new Index(primaryLabel, fieldName, true));
                 continue;
             }
@@ -98,7 +98,7 @@ public class ClassMetadata<T>
                                                   relationship.type() :
                                                   CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, fieldName);
                 RelationshipMetadata rm = new RelationshipMetadata(relationshipType, relationship.direction(), field);
-                relationshipMetadata.put(rm.getType(), rm);
+                relationshipMetadata.put(rm.getName(), rm);
                 continue;
             }
 
@@ -123,18 +123,12 @@ public class ClassMetadata<T>
             {
                 String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, fieldName);
                 RelationshipMetadata rm = new RelationshipMetadata(relType, Relationship.Direction.UNDIRECTED, field);
-                relationshipMetadata.put(rm.getType(), rm);
+                relationshipMetadata.put(rm.getName(), rm);
             }
             else
             {
                 PropertyMetadata pm = new PropertyMetadata(field);
                 propertyMetadata.put(fieldName, pm);
-
-                if (fieldName.equals("uuid"))
-                {
-                    this.primaryField = pm;
-                    this.indexes.put(fieldName, new Index(primaryLabel, fieldName, true));
-                }
             }
 
             Indexed indexed = field.getAnnotation(Indexed.class);
@@ -144,7 +138,7 @@ public class ClassMetadata<T>
             }
         }
 
-        if (primaryField == null)
+        if (primaryIdField == null)
         {
             throw new IllegalStateException("No Primary Field was detected for class: [" + type.getName() +
                                             "]. A field called 'uuid' or annotated with @Id is required");
@@ -158,27 +152,27 @@ public class ClassMetadata<T>
 
         LOG.debug("Class [{}] with labels: [{}] added. Primary key is: [{}].",
                   type.getSimpleName(),
-                  labelKey.asCypher(),
-                  primaryField.getName());
+                  nodeLabel.asCypher(),
+                  primaryIdField.getName());
     }
 
 
-    public NodeLabel getLabelKey()
+    public NodeLabel getNodeLabel()
     {
-        return labelKey;
+        return nodeLabel;
     }
 
     public JSONObject toJsonObject(Object entity)
     {
         JSONObject result = new JSONObject();
-        propertyMetadata.values().forEach(pm -> result.put(pm.getName(), pm.toJson(entity)));
+        propertyMetadata.values().forEach(pm -> result.put(pm.getName(), pm.getValue(entity)));
         LOG.trace("Converted object of type: [{}] to JSON: {}", type.getSimpleName(), result);
         return result;
     }
 
-    public PropertyMetadata getPrimaryField()
+    public PropertyMetadata getPrimaryIdField()
     {
-        return primaryField;
+        return primaryIdField;
     }
 
     public T createInstance(Long id, Map<String, Object> properties)

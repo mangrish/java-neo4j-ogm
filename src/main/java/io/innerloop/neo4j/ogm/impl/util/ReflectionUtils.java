@@ -12,7 +12,7 @@ import java.util.List;
 public class ReflectionUtils
 {
 
-    public static Iterable<Field> getFields(Class<?> clazz)
+    public static Iterable<Field> getAllFields(Class<?> clazz)
     {
 
         List<Field> currentClassFields = Lists.newArrayList(clazz.getDeclaredFields());
@@ -20,7 +20,7 @@ public class ReflectionUtils
 
         if (parentClass != null && !(parentClass.equals(Object.class)))
         {
-            List<Field> parentClassFields = (List<Field>) getFields(parentClass);
+            List<Field> parentClassFields = (List<Field>) getAllFields(parentClass);
             currentClassFields.addAll(parentClassFields);
         }
 

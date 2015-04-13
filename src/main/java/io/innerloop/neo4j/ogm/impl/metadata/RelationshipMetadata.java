@@ -1,6 +1,8 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
+import io.innerloop.neo4j.ogm.annotations.Fetch;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
+import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -12,19 +14,56 @@ public class RelationshipMetadata
 {
     private final Field field;
 
-    private final Relationship.Direction  direction;
+    private final Relationship.Direction direction;
 
-    private String type;
+    private final String fieldName;
 
-    private final boolean collection;
+    private final Class<?> type;
 
-    public RelationshipMetadata(String type, Relationship.Direction direction, Field field)
+    private boolean collection;
+
+    private Class<?> paramterizedType;
+
+    private boolean fetchEnabled;
+
+    private String name;
+
+
+    public RelationshipMetadata(String name, Relationship.Direction direction, Field field)
     {
-        this.type = type;
-        this.collection = Collection.class.isAssignableFrom(field.getType());
+        this.name = name;
+        this.fieldName = field.getName();
+        this.type = field.getType();
         this.field = field;
-        this.field.setAccessible(true);
         this.direction = direction;
+
+        if (field.isAnnotationPresent(Fetch.class))
+        {
+            this.fetchEnabled = true;
+        }
+
+        if (Collection.class.isAssignableFrom(field.getType()))
+        {
+            collection = true;
+            paramterizedType = ReflectionUtils.getParameterizedType(field);
+        }
+
+        this.field.setAccessible(true);
+    }
+
+    public boolean isCollection()
+    {
+        return collection;
+    }
+
+    public Class<?> getParamterizedType()
+    {
+        return paramterizedType;
+    }
+
+    public boolean isFetchEnabled()
+    {
+        return fetchEnabled;
     }
 
     public <T> Object getValue(T entity)
@@ -41,24 +80,14 @@ public class RelationshipMetadata
         }
     }
 
-    public String getType()
+    public String getName()
     {
-        return type;
+        return name;
     }
 
     public Relationship.Direction getDirection()
     {
         return direction;
-    }
-
-    public boolean isCollection()
-    {
-        return collection;
-    }
-
-    public Field getField()
-    {
-        return field;
     }
 
     public void setValue(Object value, Object instance)
@@ -69,9 +98,14 @@ public class RelationshipMetadata
         }
         catch (IllegalAccessException e)
         {
-            throw new RuntimeException("Could set the value of field: [" + field.getName() + "] on class: [" +
+            throw new RuntimeException("Could set the value of field: [" + fieldName + "] on class: [" +
                                        field.getDeclaringClass() +
                                        "] for object [" + instance + "] with value: [" + value + "]", e);
         }
+    }
+
+    public Class<?> getType()
+    {
+        return type;
     }
 }

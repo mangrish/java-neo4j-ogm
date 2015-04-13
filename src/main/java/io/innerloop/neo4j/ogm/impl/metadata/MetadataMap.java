@@ -10,8 +10,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -72,8 +74,7 @@ public class MetadataMap
 
         for (Class<?> cls : classesToProcess)
         {
-
-            List<String> labels = new ArrayList<>();
+            Set<String> labels = new LinkedHashSet<>();
 
             String primaryLabel = cls.getSimpleName();
             labels.add(primaryLabel);
@@ -104,7 +105,7 @@ public class MetadataMap
     }
 
 
-    private void addInterfaceLabels(Class<?> cls, List<String> labels, List<Class<?>> interfacesToProcess)
+    private void addInterfaceLabels(Class<?> cls, Set<String> labels, List<Class<?>> interfacesToProcess)
     {
         Class<?>[] interfaces = cls.getInterfaces();
         for (Class<?> interfaceCls : interfaces)
