@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static junit.framework.Assert.fail;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -407,6 +408,7 @@ public class EndToEndTests
             Wheel frontWheel = new Wheel();
             Wheel backWheel = new Wheel();
             Bike bike = new Bike();
+            bike.setColours(new String[] {"blue", "black"});
             bike.setBrand("Huffy");
             bike.setWheels(Arrays.asList(frontWheel, backWheel));
             bike.setSaddle(saddle);
@@ -429,6 +431,7 @@ public class EndToEndTests
 
             assertEquals(bike.getUuid(), actual.getUuid());
             assertEquals(bike.getBrand(), actual.getBrand());
+            assertArrayEquals(bike.getColours(), actual.getColours());
             assertEquals(bike.getWheels().size(), actual.getWheels().size());
             assertEquals("Vinyl", actual.getSaddle().getMaterial());
         }

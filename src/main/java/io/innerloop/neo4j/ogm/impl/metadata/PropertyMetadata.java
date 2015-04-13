@@ -6,7 +6,11 @@ import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by markangrish on 11/11/2014.
@@ -97,13 +101,24 @@ public class PropertyMetadata
                 {
                     val = ((Number) value).longValue();
                 }
+                else if (type.isArray())
+                {
+                    List valueAsList = (List) value;
+                    int length = valueAsList.size();
+                    val = Array.newInstance(type.getComponentType(), length);
+                }
+                else if (Set.class.isAssignableFrom(type))
+                {
+                    val = new HashSet<>((List) value);
+                }
                 LOG.debug("Field [{}] of type: [{}] SET with value: [{}] of type [{}].",
                           field.getName(),
                           field.getType().getSimpleName(),
                           val,
                           val.getClass().getSimpleName());
             }
-            else {
+            else
+            {
                 LOG.debug("Field [{}] of type: [{}] SET with null value.",
                           field.getName(),
                           field.getType().getSimpleName());
