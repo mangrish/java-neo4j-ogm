@@ -4,15 +4,14 @@ import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
 import io.innerloop.neo4j.ogm.annotations.Aggregate;
-import io.innerloop.neo4j.ogm.annotations.Fetch;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -24,6 +23,8 @@ import java.util.Stack;
  */
 public class CypherQueryMapper
 {
+    private static final Logger LOG = LoggerFactory.getLogger(CypherQueryMapper.class);
+
     private final IdentityMap identityMap;
 
     private final MetadataMap metadataMap;
@@ -68,6 +69,7 @@ public class CypherQueryMapper
 
             if (classMetadata == null)
             {
+                LOG.debug("No metadata class found for: [{}]", ref);
                 continue;
             }
             for (RelationshipMetadata rm : classMetadata.getRelationships())
@@ -81,6 +83,11 @@ public class CypherQueryMapper
                 if (!cls.isAnnotationPresent(Aggregate.class) && !rm.isFetchEnabled())
                 {
                     continue;
+                }
+
+                if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
+                {
+                    LOG.debug("Encountered an interface/abstract class [{}]. Expecting no metadata to be found", cls);
                 }
 
                 query += " OPTIONAL MATCH (" + currentAlpha + ")-[r" + i + ":" + rm.getName() + "]-() ";
