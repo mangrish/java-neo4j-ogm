@@ -9,6 +9,7 @@ import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
+import io.innerloop.neo4j.ogm.impl.util.CollectionUtils;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,16 @@ public class CypherQueryMapper
         this.metadataMap = metadataMap;
     }
 
+    /**
+     * This method will replace match(Class, Map).
+     * <p>
+     * The intent of this method is to recursively traverse classes looking for aggregate annotations and including them
+     * in the match statement. If a class is marked with aggregate and includes an Include annotation on a field this
+     * method will continue to traverse until it hits a leaf or does not see another aggregate annotation.
+     * <p>
+     * TODO: As this is an expensive operation I will probably introduce a cache as these don't change after they are
+     * fired once.
+     */
     public <T> GraphStatement match(Class<T> type, Map<String, Object> parameters)
     {
         if (type == null)
@@ -70,7 +81,11 @@ public class CypherQueryMapper
         }
 
         toVisit.push(type);
+
         int relationshipCount = 1;
+        int currentDepth = 0;
+        int elementsToDepthIncrease = 1;
+        int nextElementsToDepthIncrease = 0;
 
         while (!toVisit.isEmpty())
         {
@@ -104,7 +119,7 @@ public class CypherQueryMapper
                 }
 
                 query += " OPTIONAL MATCH (" + lhsAlpha + ")-[r" + relationshipCount + ":" + rm.getName() + "]-() ";
-                query += "WITH a"  + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" + relationshipCount;
+                query += "WITH a" + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" + relationshipCount;
                 for (int j = 1; j < relationshipCount; j++)
                 {
                     query += ", r" + j;
@@ -113,6 +128,15 @@ public class CypherQueryMapper
 
                 toVisit.push(relationshipCls);
             }
+
+            nextElementsToDepthIncrease += CollectionUtils.size(classMetadata.getRelationships());
+            if (--elementsToDepthIncrease == 0)
+            {
+                elementsToDepthIncrease = nextElementsToDepthIncrease;
+                nextElementsToDepthIncrease = 0;
+                currentDepth++;
+            }
+            LOG.debug("depth is [{}]", currentDepth);
         }
 
         if (parameters != null)
@@ -150,162 +174,6 @@ public class CypherQueryMapper
         return statement;
     }
 
-    /**
-     * This method will replace match(Class, Map).
-     * <p>
-     * The intent of this method is to recursively traverse classes looking for aggregate annotations and including them
-     * in the match statement. If a class is marked with aggregate and includes an Include annotation on a field this
-     * method will continue to traverse until it hits a leaf or does not see another aggregate annotation.
-     * <p>
-     * TODO: As this is an expensive operation I will probably introduce a cache as these don't change after they are
-     * fired once.
-     */
-    public <T> GraphStatement match2(Class<T> type, Map<String, Object> parameters)
-    {
-        if (type == null)
-        {
-            throw new RuntimeException("Type to match must not be null");
-        }
-
-        Stack<Pair<Class<?>, String>> toVisit = new Stack<>();
-        Sequence generator = new Sequence();
-        String currentAlpha = generator.computeNext();
-        String query;
-
-        ClassMetadata<T> first = metadataMap.get(type);
-
-        if (first == null)
-        {
-            if (type.isInterface() || Modifier.isAbstract(type.getModifiers()))
-            {
-                LOG.debug("Type to match is an interface/abstract class [{}]. Pushing subtypes on to stack.", type);
-                query = "MATCH (" + currentAlpha +  ":" + type.getSimpleName() + ")";
-            }
-            else
-            {
-                throw new RuntimeException("Could not find a type to match on for: [" + type.getName() + "]");
-            }
-
-        }
-        else
-        {
-            query = "MATCH (" + currentAlpha + first.getNodeLabel().asCypher() + ")";
-
-        }
-
-        toVisit.push(new Pair<>(type, currentAlpha));
-
-        int relationshipCount = 1;
-
-        while (!toVisit.isEmpty())
-        {
-            Pair<Class<?>, String> val = toVisit.pop();
-
-            ClassMetadata<?> classMetadata = metadataMap.get(val.getKey());
-            currentAlpha = val.getValue();
-
-            if (classMetadata == null)
-            {
-                if (!val.getKey().isInterface() && !Modifier.isAbstract(val.getKey().getModifiers()))
-                {
-                    Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(val.getKey());
-                    subTypesOf.forEach(k -> {
-                        if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
-                        {
-                            toVisit.push(new Pair<>(k, generator.computeNext()));
-                        }
-                    });
-                    continue;
-                }
-                else
-                {
-                    throw new RuntimeException("Could not find a type to match on for: [" + val.getKey().getName() + "]");
-                }
-            }
-
-            boolean isFirst = true;
-            for (RelationshipMetadata rm : classMetadata.getRelationships())
-            {
-                Class<?> cls = rm.getType();
-                if (rm.isCollection())
-                {
-                    cls = rm.getParamterizedType();
-                }
-
-                if (!cls.isAnnotationPresent(Aggregate.class) && !rm.isFetchEnabled())
-                {
-                    continue;
-                }
-
-                if (isFirst)
-                {
-                    query += "-[rels" + relationshipCount;
-                    isFirst = false;
-                }
-
-                query += ":" + rm.getName();
-
-                if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
-                {
-                    LOG.debug("Encountered an interface/abstract class [{}]. Pushing on to stack.", cls);
-                    Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(cls);
-                    subTypesOf.forEach(k -> {
-                        if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
-                        {
-                            toVisit.push(new Pair<>(k, generator.computeNext()));
-                        }
-                    });
-                }
-                else
-                {
-                    toVisit.push(new Pair<>(cls, generator.computeNext()));
-                }
-            }
-            if (!isFirst)
-            {
-                query += "]-(" + generator.computeNext() + ")";
-                query += " WITH " + currentAlpha + ", rels" + relationshipCount;
-
-            }
-            relationshipCount++;
-        }
-
-        // this part is ok...
-        if (parameters != null)
-        {
-            query += " WHERE ";
-            int numParams = parameters.size();
-            for (String key : parameters.keySet())
-            {
-                query += "a." + key + " = {" + key + "}";
-
-                if (--numParams > 0)
-                {
-                    query += ", ";
-                }
-            }
-        }
-
-        query += " RETURN " + generator.printTo(currentAlpha);
-
-        for (int j = 1; j < relationshipCount; j++)
-        {
-            query += ", rels" + j;
-        }
-
-        // this part is ok...
-        GraphStatement statement = new GraphStatement(query);
-
-        if (parameters != null)
-        {
-            for (Map.Entry<String, Object> entry : parameters.entrySet())
-            {
-                statement.setParam(entry.getKey(), entry.getValue());
-            }
-        }
-
-        return statement;
-    }
 
     public <T> List<Statement> merge(T entity)
     {
@@ -492,7 +360,6 @@ public class CypherQueryMapper
         private int now;
 
         private static char[] vs;
-
 
 
         static
