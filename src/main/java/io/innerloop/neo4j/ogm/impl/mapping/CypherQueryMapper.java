@@ -1,5 +1,6 @@
 package io.innerloop.neo4j.ogm.impl.mapping;
 
+import com.google.common.collect.AbstractIterator;
 import io.innerloop.neo4j.client.GraphStatement;
 import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.client.Statement;
@@ -8,14 +9,17 @@ import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
+import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -35,6 +39,118 @@ public class CypherQueryMapper
         this.metadataMap = metadataMap;
     }
 
+    public <T> GraphStatement match(Class<T> type, Map<String, Object> parameters)
+    {
+        if (type == null)
+        {
+            throw new RuntimeException("Type to match must not be null");
+        }
+
+        Stack<Class<?>> toVisit = new Stack<>();
+        String query;
+
+        ClassMetadata<T> first = metadataMap.get(type);
+
+        if (first == null)
+        {
+            if (type.isInterface() || Modifier.isAbstract(type.getModifiers()))
+            {
+                LOG.debug("Type to match is an interface/abstract class [{}]. Pushing subtypes on to stack.", type);
+                query = "MATCH (a:" + type.getSimpleName() + ")";
+            }
+            else
+            {
+                throw new RuntimeException("Could not find a type to match on for: [" + type.getName() + "]");
+            }
+
+        }
+        else
+        {
+            query = "MATCH (a" + first.getNodeLabel().asCypher() + ")";
+
+        }
+
+        toVisit.push(type);
+        int relationshipCount = 1;
+
+        while (!toVisit.isEmpty())
+        {
+            Class<?> cls = toVisit.pop();
+
+            if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
+            {
+                Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(cls);
+                subTypesOf.forEach(k -> {
+                    if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
+                    {
+                        toVisit.push(k);
+                    }
+                });
+                continue;
+            }
+
+            ClassMetadata<?> classMetadata = metadataMap.get(cls);
+
+            for (RelationshipMetadata rm : classMetadata.getRelationships())
+            {
+                Class<?> relationshipCls = rm.getType();
+                if (rm.isCollection())
+                {
+                    relationshipCls = rm.getParamterizedType();
+                }
+
+                if (!relationshipCls.isAnnotationPresent(Aggregate.class) && !rm.isFetchEnabled())
+                {
+                    continue;
+                }
+
+                query += " OPTIONAL MATCH (" + ")-[r" + relationshipCount + ":" + rm.getName() + "]-() ";
+                query += "WITH a"  + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" + relationshipCount;
+                for (int j = 1; j < relationshipCount; j++)
+                {
+                    query += ", r" + j;
+                }
+                relationshipCount++;
+
+                toVisit.push(relationshipCls);
+            }
+        }
+
+        if (parameters != null)
+        {
+            query += " WHERE ";
+            int numParams = parameters.size();
+            for (String key : parameters.keySet())
+            {
+                query += "a." + key + " = {" + key + "}";
+
+                if (--numParams > 0)
+                {
+                    query += ", ";
+                }
+            }
+        }
+
+        query += " RETURN a";
+
+        for (int j = 1; j < relationshipCount; j++)
+        {
+            query += ", r" + j;
+        }
+
+        GraphStatement statement = new GraphStatement(query);
+
+        if (parameters != null)
+        {
+            for (Map.Entry<String, Object> entry : parameters.entrySet())
+            {
+                statement.setParam(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return statement;
+    }
+
     /**
      * This method will replace match(Class, Map).
      * <p>
@@ -45,33 +161,70 @@ public class CypherQueryMapper
      * TODO: As this is an expensive operation I will probably introduce a cache as these don't change after they are
      * fired once.
      */
-    public <T> GraphStatement match(Class<T> type, Map<String, Object> parameters)
+    public <T> GraphStatement match2(Class<T> type, Map<String, Object> parameters)
     {
-        ClassMetadata<T> first = metadataMap.get(type);
-        AlphaGenerator generator = new AlphaGenerator();
-
-        String currentAlpha = generator.nextAlpha();
-        // Get the first match
-        String query = "MATCH (" + currentAlpha + first.getNodeLabel().asCypher() + ")";
-        int i = 1;
-
-        Stack<Class<?>> toVisit = new Stack<>();
-
-        if (type != null)
+        if (type == null)
         {
-            toVisit.push(type);
+            throw new RuntimeException("Type to match must not be null");
         }
+
+        Stack<Pair<Class<?>, String>> toVisit = new Stack<>();
+        Sequence generator = new Sequence();
+        String currentAlpha = generator.computeNext();
+        String query;
+
+        ClassMetadata<T> first = metadataMap.get(type);
+
+        if (first == null)
+        {
+            if (type.isInterface() || Modifier.isAbstract(type.getModifiers()))
+            {
+                LOG.debug("Type to match is an interface/abstract class [{}]. Pushing subtypes on to stack.", type);
+                query = "MATCH (" + currentAlpha +  ":" + type.getSimpleName() + ")";
+            }
+            else
+            {
+                throw new RuntimeException("Could not find a type to match on for: [" + type.getName() + "]");
+            }
+
+        }
+        else
+        {
+            query = "MATCH (" + currentAlpha + first.getNodeLabel().asCypher() + ")";
+
+        }
+
+        toVisit.push(new Pair<>(type, currentAlpha));
+
+        int relationshipCount = 1;
 
         while (!toVisit.isEmpty())
         {
-            Class<?> ref = toVisit.pop();
-            ClassMetadata<?> classMetadata = metadataMap.get(ref);
+            Pair<Class<?>, String> val = toVisit.pop();
+
+            ClassMetadata<?> classMetadata = metadataMap.get(val.getKey());
+            currentAlpha = val.getValue();
 
             if (classMetadata == null)
             {
-                LOG.debug("No metadata class found for: [{}]", ref);
-                continue;
+                if (!val.getKey().isInterface() && !Modifier.isAbstract(val.getKey().getModifiers()))
+                {
+                    Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(val.getKey());
+                    subTypesOf.forEach(k -> {
+                        if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
+                        {
+                            toVisit.push(new Pair<>(k, generator.computeNext()));
+                        }
+                    });
+                    continue;
+                }
+                else
+                {
+                    throw new RuntimeException("Could not find a type to match on for: [" + val.getKey().getName() + "]");
+                }
             }
+
+            boolean isFirst = true;
             for (RelationshipMetadata rm : classMetadata.getRelationships())
             {
                 Class<?> cls = rm.getType();
@@ -85,22 +238,37 @@ public class CypherQueryMapper
                     continue;
                 }
 
+                if (isFirst)
+                {
+                    query += "-[rels" + relationshipCount;
+                    isFirst = false;
+                }
+
+                query += ":" + rm.getName();
+
                 if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
                 {
-                    LOG.debug("Encountered an interface/abstract class [{}]. Expecting no metadata to be found", cls);
+                    LOG.debug("Encountered an interface/abstract class [{}]. Pushing on to stack.", cls);
+                    Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(cls);
+                    subTypesOf.forEach(k -> {
+                        if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
+                        {
+                            toVisit.push(new Pair<>(k, generator.computeNext()));
+                        }
+                    });
                 }
-
-                query += " OPTIONAL MATCH (" + currentAlpha + ")-[r" + i + ":" + rm.getName() + "]-() ";
-                query += "WITH " + currentAlpha + ", COLLECT(r" + i + ") as r" + i;
-                for (int j = 1; j < i; j++)
+                else
                 {
-                    query += ", r" + j;
+                    toVisit.push(new Pair<>(cls, generator.computeNext()));
                 }
-                i++;
-
-                toVisit.push(cls);
             }
-            currentAlpha = generator.nextAlpha();
+            if (!isFirst)
+            {
+                query += "]-(" + generator.computeNext() + ")";
+                query += " WITH " + currentAlpha + ", rels" + relationshipCount;
+
+            }
+            relationshipCount++;
         }
 
         // this part is ok...
@@ -119,12 +287,11 @@ public class CypherQueryMapper
             }
         }
 
-        // TODO: fix this part
-        query += " RETURN " + generator.printCurrent();
+        query += " RETURN " + generator.printTo(currentAlpha);
 
-        for (int j = 1; j < i; j++)
+        for (int j = 1; j < relationshipCount; j++)
         {
-            query += ", r" + j;
+            query += ", rels" + j;
         }
 
         // this part is ok...
@@ -321,26 +488,63 @@ public class CypherQueryMapper
         return results;
     }
 
-    private static class AlphaGenerator
+    private static class Sequence extends AbstractIterator<String>
     {
+        private int now;
 
-        public static final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
+        private static char[] vs;
 
-        private static final String[] CHARS = ALPHABET.split("(?!^)");
 
-        private int currentPointer = 0;
 
-        public String nextAlpha()
+        static
         {
-            return CHARS[currentPointer++];
+            vs = new char['z' - 'a' + 1];
+            for (char i = 'a'; i <= 'z'; i++)
+                vs[i - 'a'] = i;
         }
 
-        public String printCurrent()
+        private StringBuilder alpha(int i)
         {
-            String result = CHARS[0];
-            for (int i = 1; i < currentPointer - 2; i++)
+            assert i > 0;
+            char r = vs[--i % vs.length];
+            int n = i / vs.length;
+            return n == 0 ? new StringBuilder().append(r) : alpha(n).append(r);
+        }
+
+        @Override
+        protected String computeNext()
+        {
+            return alpha(++now).toString();
+        }
+
+        public String peekNext()
+        {
+            return alpha(now + 1).toString();
+        }
+
+        public void decrement()
+        {
+            now--;
+        }
+
+        public String printTo(String alpha)
+        {
+            char c = alpha.toCharArray()[0];
+
+            int pos = Arrays.binarySearch(vs, c);
+
+            String result = "";
+
+            for (int i = 0; i <= pos; i++)
             {
-                result += ", " + CHARS[currentPointer - 2];
+                if (i == 0)
+                {
+                    result += vs[i];
+                }
+                else
+                {
+                    result += ", " + vs[i];
+                }
             }
 
             return result;

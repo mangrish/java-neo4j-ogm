@@ -3,6 +3,7 @@ package io.innerloop.neo4j.ogm.impl.metadata;
 import io.innerloop.neo4j.ogm.annotations.Transient;
 import io.innerloop.neo4j.ogm.impl.index.Index;
 import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +33,12 @@ public class MetadataMap
 
     private Map<NodeLabel, ClassMetadata<?>> lookupByNodeLabel;
 
-    public MetadataMap(Reflections reflections)
+    private Reflections reflections;
+
+    public MetadataMap(String... packages)
     {
+        reflections = new Reflections(packages, new SubTypesScanner(false));
+
         this.lookupByClass = new HashMap<>();
         this.lookupByNodeLabel = new HashMap<>();
 
@@ -97,10 +102,13 @@ public class MetadataMap
 
             String[] labelArray = labels.toArray(new String[labels.size()]);
             NodeLabel key = new NodeLabel(labelArray);
-            ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, classesToProcess, primaryLabel, key);
 
-            lookupByClass.put(cls, classMetadata);
-            lookupByNodeLabel.put(key, classMetadata);
+            if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()))
+            {
+                ClassMetadata<?> classMetadata = new ClassMetadata<>(cls, classesToProcess, primaryLabel, key);
+                lookupByClass.put(cls, classMetadata);
+                lookupByNodeLabel.put(key, classMetadata);
+            }
         }
     }
 
@@ -115,6 +123,11 @@ public class MetadataMap
                 labels.add(interfaceCls.getSimpleName());
             }
         }
+    }
+
+    public Set<? extends Class<?>> findSubTypesOf(Class<?> type)
+    {
+        return reflections.getSubTypesOf(type);
     }
 
     public ClassMetadata get(NodeLabel nodeLabel)

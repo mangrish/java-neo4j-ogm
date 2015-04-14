@@ -19,8 +19,7 @@ public class SessionFactory
 
     public SessionFactory(Neo4jClient client, String... packages)
     {
-        Reflections reflections = new Reflections(packages, new SubTypesScanner(false));
-        this.metadataMap = new MetadataMap(reflections);
+        this.metadataMap = new MetadataMap(packages);
         this.client = client;
         buildIndexes();
     }
