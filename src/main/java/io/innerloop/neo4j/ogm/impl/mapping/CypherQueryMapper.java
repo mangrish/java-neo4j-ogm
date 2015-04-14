@@ -47,6 +47,7 @@ public class CypherQueryMapper
         }
 
         Stack<Class<?>> toVisit = new Stack<>();
+        String lhsAlpha = "a";
         String query;
 
         ClassMetadata<T> first = metadataMap.get(type);
@@ -62,12 +63,10 @@ public class CypherQueryMapper
             {
                 throw new RuntimeException("Could not find a type to match on for: [" + type.getName() + "]");
             }
-
         }
         else
         {
             query = "MATCH (a" + first.getNodeLabel().asCypher() + ")";
-
         }
 
         toVisit.push(type);
@@ -104,7 +103,7 @@ public class CypherQueryMapper
                     continue;
                 }
 
-                query += " OPTIONAL MATCH (" + ")-[r" + relationshipCount + ":" + rm.getName() + "]-() ";
+                query += " OPTIONAL MATCH (" + lhsAlpha + ")-[r" + relationshipCount + ":" + rm.getName() + "]-() ";
                 query += "WITH a"  + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" + relationshipCount;
                 for (int j = 1; j < relationshipCount; j++)
                 {
