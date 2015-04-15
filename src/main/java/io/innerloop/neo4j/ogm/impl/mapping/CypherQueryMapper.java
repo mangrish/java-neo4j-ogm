@@ -17,9 +17,13 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 
@@ -57,8 +61,9 @@ public class CypherQueryMapper
             throw new RuntimeException("Type to match must not be null");
         }
 
-        Stack<Class<?>> toVisit = new Stack<>();
-        String lhsAlpha = "a";
+        Queue<Class<?>> toVisit = new LinkedList<>();
+        Map<Pair<Class<?>, Integer>, String> usage = new HashMap<>();
+        Sequence sequence = new Sequence();
         String query;
 
         ClassMetadata<T> first = metadataMap.get(type);
@@ -80,16 +85,20 @@ public class CypherQueryMapper
             query = "MATCH (a" + first.getNodeLabel().asCypher() + ")";
         }
 
-        toVisit.push(type);
+        toVisit.offer(type);
 
         int relationshipCount = 1;
         int currentDepth = 0;
         int elementsToDepthIncrease = 1;
         int nextElementsToDepthIncrease = 0;
 
+        final Pair<Class<?>, Integer> parentKey = new Pair<>(type, currentDepth);
+        usage.put(parentKey, sequence.computeNext());
+
         while (!toVisit.isEmpty())
         {
-            Class<?> cls = toVisit.pop();
+            Class<?> cls = toVisit.poll();
+            Pair<Class<?>, Integer> key = new Pair<>(cls, currentDepth);
 
             if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
             {
@@ -97,7 +106,7 @@ public class CypherQueryMapper
                 subTypesOf.forEach(k -> {
                     if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
                     {
-                        toVisit.push(k);
+                        toVisit.offer(k);
                     }
                 });
                 continue;
@@ -118,25 +127,54 @@ public class CypherQueryMapper
                     continue;
                 }
 
-                query += " OPTIONAL MATCH (" + lhsAlpha + ")-[r" + relationshipCount + ":" + rm.getName() + "]-() ";
-                query += "WITH a" + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" + relationshipCount;
-                for (int j = 1; j < relationshipCount; j++)
+                LOG.debug("depth is [{}]", currentDepth);
+                String lhs = usage.get(key);
+                LOG.debug("LHS KEY: [{}]", key);
+                Pair<Class<?>, Integer> rhsKey = new Pair<>(relationshipCls, currentDepth + 1);
+                LOG.debug("RHS KEY: [{}]", rhsKey);
+
+                String rhs = usage.get(rhsKey);
+                if (rhs == null)
                 {
-                    query += ", r" + j;
+                    rhs = sequence.computeNext();
+                    if (relationshipCls.isInterface() || Modifier.isAbstract(relationshipCls.getModifiers()))
+                    {
+                        Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(relationshipCls);
+                        final int finalCurrentDepth = currentDepth + 1;
+                        final String finalRhs = rhs;
+                        subTypesOf.forEach(k -> {
+                            if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
+                            {
+                                usage.put(new Pair<>(k, finalCurrentDepth), finalRhs);
+                            }
+                        });
+                        nextElementsToDepthIncrease += subTypesOf.size();
+                    }
+                    else
+                    {
+                        usage.put(new Pair<>(relationshipCls, currentDepth + 1), rhs);
+                        nextElementsToDepthIncrease++;
+                    }
+
+                }
+
+                query += " OPTIONAL MATCH (" + lhs + ")-[r" + relationshipCount + ":" + rm.getName() + "]-(" + rhs + ") ";
+                query += "WITH " + alphaUsed(usage) + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" +
+                         relationshipCount;
+                for (int i = 1; i < relationshipCount; i++)
+                {
+                    query += ", r" + i;
                 }
                 relationshipCount++;
-
-                toVisit.push(relationshipCls);
+                toVisit.offer(relationshipCls);
             }
 
-            nextElementsToDepthIncrease += CollectionUtils.size(classMetadata.getRelationships());
             if (--elementsToDepthIncrease == 0)
             {
                 elementsToDepthIncrease = nextElementsToDepthIncrease;
                 nextElementsToDepthIncrease = 0;
                 currentDepth++;
             }
-            LOG.debug("depth is [{}]", currentDepth);
         }
 
         if (parameters != null)
@@ -154,7 +192,7 @@ public class CypherQueryMapper
             }
         }
 
-        query += " RETURN a";
+        query += " RETURN " + alphaUsed(usage);
 
         for (int j = 1; j < relationshipCount; j++)
         {
@@ -172,6 +210,25 @@ public class CypherQueryMapper
         }
 
         return statement;
+    }
+
+    private static String alphaUsed(Map<Pair<Class<?>, Integer>, String> usage)
+    {
+        final String comma = ", ";
+        String result = "";
+
+        boolean first = true;
+        for (String entry : new HashSet<>(usage.values()))
+        {
+            if (!first)
+            {
+                result += comma;
+            }
+            first = false;
+            result += entry;
+        }
+
+        return result;
     }
 
 
