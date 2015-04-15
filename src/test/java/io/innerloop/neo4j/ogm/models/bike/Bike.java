@@ -6,10 +6,19 @@ import io.innerloop.neo4j.ogm.converters.UUIDConverter;
 import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class Bike
 {
+    public enum Logo
+    {
+        LOGO_1,
+        LOGO_2,
+        LOGO_3,
+        LOGO_4,
+        LOGO_5
+    }
 
     public Long id;
 
@@ -19,7 +28,9 @@ public class Bike
 
     private GearSystem gearSystem;
 
-    private String[] colours;
+    private List<String> colours;
+
+    private Set<Logo> logos;
 
     private List<Wheel> wheels;
 
@@ -32,6 +43,16 @@ public class Bike
     public Bike()
     {
         this.uuid = UuidGenerator.generate();
+    }
+
+    public Set<Logo>  getLogos()
+    {
+        return logos;
+    }
+
+    public void setLogos(Set<Logo> logos)
+    {
+        this.logos = logos;
     }
 
     public UUID getUuid()
@@ -49,7 +70,7 @@ public class Bike
         this.brand = brand;
     }
 
-    public String[] getColours()
+    public List<String> getColours()
     {
         return colours;
     }
@@ -79,7 +100,7 @@ public class Bike
         return saddle;
     }
 
-    public void setColours(String[] colours)
+    public void setColours(List<String> colours)
     {
         this.colours = colours;
     }

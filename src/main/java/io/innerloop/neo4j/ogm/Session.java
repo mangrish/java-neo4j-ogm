@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -272,11 +271,7 @@ public class Session
 
     public <T> void save(T entity)
     {
-        if (entity.getClass().isArray())
-        {
-            saveAll(Arrays.asList(entity));
-        }
-        else if (Iterable.class.isAssignableFrom(entity.getClass()))
+        if (Iterable.class.isAssignableFrom(entity.getClass()))
         {
             saveAll((Iterable<T>) entity);
         }
@@ -302,11 +297,7 @@ public class Session
 
     public <T> void delete(T entity)
     {
-        if (entity.getClass().isArray())
-        {
-            deleteAll(Arrays.asList(entity));
-        }
-        else if (Iterable.class.isAssignableFrom(entity.getClass()))
+        if (Iterable.class.isAssignableFrom(entity.getClass()))
         {
             deleteAll((Iterable<T>) entity);
         }

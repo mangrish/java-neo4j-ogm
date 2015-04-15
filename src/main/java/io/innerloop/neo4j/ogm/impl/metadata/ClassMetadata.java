@@ -118,7 +118,7 @@ public class ClassMetadata<T>
             }
 
             if ((isCollectionType && (parametrizedCls != null && !(Primitives.isWrapperType(parametrizedCls) ||
-                                                                   String.class.isAssignableFrom(parametrizedCls)))) ||
+                                                                   String.class.isAssignableFrom(parametrizedCls) || parametrizedCls.isEnum()))) ||
                 isRelationshipClass)
             {
                 String relType = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, fieldName);

@@ -24,9 +24,12 @@ import ch.qos.logback.classic.Logger;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertArrayEquals;
@@ -284,10 +287,14 @@ public class EndToEndTests
             frame.addGearRatio("2");
             frame.addGearRatio("3");
             frame.addGearRatio("4");
+            Set<Bike.Logo> logos =  new HashSet<>();
+            logos.add(Bike.Logo.LOGO_1);
+            logos.add(Bike.Logo.LOGO_2);
             bike.setBrand("Huffy");
             bike.setWheels(Arrays.asList(frontWheel, backWheel));
             bike.setSaddle(expected);
             bike.setFrame(frame);
+            bike.setLogos(logos);
             session.save(bike);
 
             HashMap<String, Object> parameters = new HashMap<>();
@@ -408,7 +415,10 @@ public class EndToEndTests
             Wheel frontWheel = new Wheel();
             Wheel backWheel = new Wheel();
             Bike bike = new Bike();
-            bike.setColours(new String[] {"blue", "black"});
+            List<String> colours = new ArrayList<>();
+            colours.add("blue");
+            colours.add("black");
+            bike.setColours(colours);
             bike.setBrand("Huffy");
             bike.setWheels(Arrays.asList(frontWheel, backWheel));
             bike.setSaddle(saddle);
@@ -431,7 +441,7 @@ public class EndToEndTests
 
             assertEquals(bike.getUuid(), actual.getUuid());
             assertEquals(bike.getBrand(), actual.getBrand());
-            assertArrayEquals(bike.getColours(), actual.getColours());
+            assertEquals(bike.getColours(), actual.getColours());
             assertEquals(bike.getWheels().size(), actual.getWheels().size());
             assertEquals("Vinyl", actual.getSaddle().getMaterial());
         }
@@ -440,6 +450,89 @@ public class EndToEndTests
             session.close();
         }
     }
+
+    @Test
+    public void testSaveDomainObjectsThenUpdate()
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
+        Session session = sessionFactory.getCurrentSession();
+        Transaction transaction = session.getTransaction();
+        try
+        {
+            transaction.begin();
+
+            transaction.begin();
+            Saddle expected = new Saddle();
+            expected.setPrice(29.95);
+            expected.setMaterial("Leather");
+            Wheel frontWheel = new Wheel();
+            Wheel backWheel = new Wheel();
+            Bike bike = new Bike();
+            SpeedFrame frame = new SpeedFrame("Carbon Composite", 2.2);
+            frame.addGearRatio("1");
+            frame.addGearRatio("2");
+            frame.addGearRatio("3");
+            frame.addGearRatio("4");
+            Set<Bike.Logo> logos =  new HashSet<>();
+            logos.add(Bike.Logo.LOGO_1);
+            logos.add(Bike.Logo.LOGO_2);
+            bike.setBrand("Huffy");
+            bike.setWheels(Arrays.asList(frontWheel, backWheel));
+            bike.setSaddle(expected);
+            bike.setFrame(frame);
+            bike.setLogos(logos);
+            session.save(bike);
+
+            session.save(bike);
+            transaction.commit();
+        }
+        finally
+        {
+            session.close();
+        }
+
+        Session session2 = sessionFactory.getCurrentSession();
+        Transaction transaction2 = session2.getTransaction();
+        try
+        {
+            transaction2.begin();
+            Bike bike = session2.load(Bike.class,"brand", "Huffy");
+            Saddle newSaddle = new Saddle();
+            newSaddle.setPrice(19.95);
+            newSaddle.setMaterial("Vinyl");
+            bike.setSaddle(newSaddle);
+            ((SpeedFrame)bike.getFrame()).addGearRatio("5");
+            Set<Bike.Logo> logos =  new HashSet<>();
+            logos.add(Bike.Logo.LOGO_1);
+            logos.add(Bike.Logo.LOGO_2);
+            logos.add(Bike.Logo.LOGO_3);
+            logos.add(Bike.Logo.LOGO_4);
+            bike.setLogos(logos);
+            session2.save(bike);
+            transaction2.commit();
+        }
+        finally
+        {
+            session2.close();
+        }
+
+        Session session3 = sessionFactory.getCurrentSession();
+        Transaction transaction3 = session3.getTransaction();
+        try
+        {
+            transaction3.begin();
+            Bike bike = session2.load(Bike.class,"brand", "Huffy");
+
+            session3.save(bike);
+            transaction3.commit();
+        }
+        finally
+        {
+            session3.close();
+        }
+
+    }
+
 
     @Test
     public void canSaveNewObjectTreeToDatabase() throws Neo4jClientException

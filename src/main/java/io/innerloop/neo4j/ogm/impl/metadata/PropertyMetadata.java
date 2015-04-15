@@ -6,8 +6,9 @@ import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +40,14 @@ public class PropertyMetadata
         this.fieldName = field.getName();
         this.type = field.getType();
         this.field = field;
+
+        if (type.isArray())
+        {
+            throw new UnsupportedOperationException("This OGM does not currently support Native Arrays. Please use Lists for now for field: [" +
+                                                    fieldName + "] on class: [" + field.getDeclaringClass() +
+                                                    "]");
+        }
+
         if (Iterable.class.isAssignableFrom(type))
         {
             iterable = true;
@@ -101,15 +110,31 @@ public class PropertyMetadata
                 {
                     val = ((Number) value).longValue();
                 }
-                else if (type.isArray())
-                {
-                    List valueAsList = (List) value;
-                    int length = valueAsList.size();
-                    val = Array.newInstance(type.getComponentType(), length);
-                }
                 else if (Set.class.isAssignableFrom(type))
                 {
-                    val = new HashSet<>((List) value);
+                    List values = (List) value;
+                    if (paramterizedType != null && paramterizedType.isEnum())
+                    {
+                        Set convertedVals = new HashSet<>();
+                        for (Object e : values)
+                        {
+                            convertedVals.add(Enum.valueOf((Class<Enum>) paramterizedType, (String) e));
+                        }
+                        val = convertedVals;
+                    }
+                    else
+                    {
+                        val = new HashSet<>(values);
+                    }
+                }
+                else if (List.class.isAssignableFrom(type) && paramterizedType != null && paramterizedType.isEnum())
+                {
+                    Set convertedVals = new HashSet<>();
+                    for (Object e : (List) value)
+                    {
+                        convertedVals.add(Enum.valueOf((Class<Enum>) type.getComponentType(), (String) e));
+                    }
+                    val = convertedVals;
                 }
                 LOG.debug("Field [{}] of type: [{}] SET with value: [{}] of type [{}].",
                           field.getName(),
@@ -140,9 +165,22 @@ public class PropertyMetadata
         try
         {
             o = field.get(ref);
-            if (converter != null && o != null)
+            if (o != null)
             {
-                o = converter.serialize(o);
+                if (converter != null)
+                {
+                    o = converter.serialize(o);
+                }
+                else if (paramterizedType != null && paramterizedType.isEnum())
+                {
+                    if (Collection.class.isAssignableFrom(type))
+                    {
+                        Collection c = (Collection) o;
+                        List<String> result = new ArrayList<>();
+                        c.forEach(k -> result.add(k.toString()));
+                        o = result;
+                    }
+                }
             }
             LOG.debug("Field [{}] of type: [{}] RETRIEVED with value: [{}].",
                       field.getName(),
