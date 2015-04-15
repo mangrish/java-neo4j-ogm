@@ -11,6 +11,7 @@ import io.innerloop.neo4j.ogm.models.bike.Wheel;
 import io.innerloop.neo4j.ogm.models.cineasts.Actor;
 import io.innerloop.neo4j.ogm.models.cineasts.Movie;
 import io.innerloop.neo4j.ogm.models.cineasts.Role;
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -522,8 +523,8 @@ public class EndToEndTests
         {
             transaction3.begin();
             Bike bike = session2.load(Bike.class,"brand", "Huffy");
-
-            session3.save(bike);
+            assertEquals(bike.getLogos().size(), 4);
+            assertEquals(((SpeedFrame)bike.getFrame()).getGearRatios().size(), 5);
             transaction3.commit();
         }
         finally
