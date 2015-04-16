@@ -9,7 +9,6 @@ import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
-import io.innerloop.neo4j.ogm.impl.util.CollectionUtils;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +33,25 @@ public class CypherQueryMapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(CypherQueryMapper.class);
 
+    private static String alphaUsed(Map<Pair<Class<?>, Integer>, String> usage)
+    {
+        final String comma = ", ";
+        String result = "";
+
+        boolean first = true;
+        for (String entry : new HashSet<>(usage.values()))
+        {
+            if (!first)
+            {
+                result += comma;
+            }
+            first = false;
+            result += entry;
+        }
+
+        return result;
+    }
+
     private final IdentityMap identityMap;
 
     private final MetadataMap metadataMap;
@@ -45,10 +63,8 @@ public class CypherQueryMapper
     }
 
     /**
-     * This method will replace match(Class, Map).
-     * <p>
-     * The intent of this method is to recursively traverse classes looking for aggregate annotations and including them
-     * in the match statement. If a class is marked with aggregate and includes an Include annotation on a field this
+     * The intent of this method is to iteratively traverse classes looking for aggregate annotations and including them
+     * in the match statement. If a class is marked with aggregate and includes an Fetch annotation on a field this
      * method will continue to traverse until it hits a leaf or does not see another aggregate annotation.
      * <p>
      * TODO: As this is an expensive operation I will probably introduce a cache as these don't change after they are
@@ -158,7 +174,8 @@ public class CypherQueryMapper
 
                 }
 
-                query += " OPTIONAL MATCH (" + lhs + ")-[r" + relationshipCount + ":" + rm.getName() + "]-(" + rhs + ") ";
+                query += " OPTIONAL MATCH (" + lhs + ")-[r" + relationshipCount + ":" + rm.getName() + "]-(" + rhs +
+                         ") ";
                 query += "WITH " + alphaUsed(usage) + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" +
                          relationshipCount;
                 for (int i = 1; i < relationshipCount; i++)
@@ -210,25 +227,6 @@ public class CypherQueryMapper
         }
 
         return statement;
-    }
-
-    private static String alphaUsed(Map<Pair<Class<?>, Integer>, String> usage)
-    {
-        final String comma = ", ";
-        String result = "";
-
-        boolean first = true;
-        for (String entry : new HashSet<>(usage.values()))
-        {
-            if (!first)
-            {
-                result += comma;
-            }
-            first = false;
-            result += entry;
-        }
-
-        return result;
     }
 
 
@@ -418,7 +416,6 @@ public class CypherQueryMapper
 
         private static char[] vs;
 
-
         static
         {
             vs = new char['z' - 'a' + 1];
@@ -438,39 +435,6 @@ public class CypherQueryMapper
         protected String computeNext()
         {
             return alpha(++now).toString();
-        }
-
-        public String peekNext()
-        {
-            return alpha(now + 1).toString();
-        }
-
-        public void decrement()
-        {
-            now--;
-        }
-
-        public String printTo(String alpha)
-        {
-            char c = alpha.toCharArray()[0];
-
-            int pos = Arrays.binarySearch(vs, c);
-
-            String result = "";
-
-            for (int i = 0; i <= pos; i++)
-            {
-                if (i == 0)
-                {
-                    result += vs[i];
-                }
-                else
-                {
-                    result += ", " + vs[i];
-                }
-            }
-
-            return result;
         }
     }
 }

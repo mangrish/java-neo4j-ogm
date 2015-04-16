@@ -11,6 +11,9 @@ import io.innerloop.neo4j.ogm.models.bike.Wheel;
 import io.innerloop.neo4j.ogm.models.cineasts.Actor;
 import io.innerloop.neo4j.ogm.models.cineasts.Movie;
 import io.innerloop.neo4j.ogm.models.cineasts.Role;
+import io.innerloop.neo4j.ogm.models.complex.Alias;
+import io.innerloop.neo4j.ogm.models.complex.Category;
+import io.innerloop.neo4j.ogm.models.complex.Subject;
 import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -461,8 +464,6 @@ public class EndToEndTests
         try
         {
             transaction.begin();
-
-            transaction.begin();
             Saddle expected = new Saddle();
             expected.setPrice(29.95);
             expected.setMaterial("Leather");
@@ -522,7 +523,7 @@ public class EndToEndTests
         try
         {
             transaction3.begin();
-            Bike bike = session2.load(Bike.class,"brand", "Huffy");
+            Bike bike = session3.load(Bike.class,"brand", "Huffy");
             assertEquals(bike.getLogos().size(), 4);
             assertEquals(((SpeedFrame)bike.getFrame()).getGearRatios().size(), 5);
             transaction3.commit();
@@ -572,6 +573,82 @@ public class EndToEndTests
         finally
         {
             session.close();
+        }
+    }
+
+//    @Test
+    public void canSupportWeightedRelationships() throws Neo4jClientException
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.complex");
+        Session session = sessionFactory.getCurrentSession();
+        Transaction transaction = session.getTransaction();
+        try
+        {
+            transaction.begin();
+            Category c1 = new Category("Languages");
+            Category c2 = new Category("Frameworks");
+            Category c3 = new Category("APIs");
+            Category c4 = new Category("Libraries");
+            Category c5 = new Category("Platforms");
+            Category c6 = new Category("Concepts");
+            Category c7 = new Category("Storage");
+            Category c8 = new Category("Paradigms");
+            Category c9 = new Category("Practices");
+            Category c10 = new Category("Tools");
+            session.save(c1);
+            session.save(c2);
+            session.save(c3);
+            session.save(c4);
+            session.save(c5);
+            session.save(c6);
+            session.save(c7);
+            session.save(c8);
+            session.save(c9);
+            session.save(c10);
+
+            Subject s3 = new Subject("Object Oriented Programming");
+            s3.addAlias(new Alias("OOP"));
+            s3.addCategory(c6);
+
+            Subject s1 = new Subject("Java Programming Language");
+            s1.addAlias(new Alias("Java"));
+            s1.addAlias(new Alias("J2SE"));
+            s1.addAlias(new Alias("JavaSE"));
+            s1.addCategory(c1);
+            s1.requires(s3, 0.9);
+
+            Subject s2 = new Subject("C# Programming Language");
+            s2.addAlias(new Alias("C#"));
+            s2.addAlias(new Alias("C Sharp"));
+            s2.addCategory(c1);
+            s2.requires(s3, 0.9);
+
+            session.save(s1);
+            session.save(s2);
+            session.save(s3);
+
+            transaction.commit();
+        }
+        finally
+        {
+            session.close();
+        }
+
+        Session session2 = sessionFactory.getCurrentSession();
+        Transaction transaction2 = session2.getTransaction();
+        try
+        {
+            transaction2.begin();
+            Subject java = session2.load(Subject.class, "name", "Java Programming Language");
+            assertNotNull(java);
+            assertEquals(java.getAliases().size(), 2);
+            assertEquals(java.getCategories().size(), 1);
+
+            transaction2.commit();
+        }
+        finally
+        {
+            session2.close();
         }
     }
 }

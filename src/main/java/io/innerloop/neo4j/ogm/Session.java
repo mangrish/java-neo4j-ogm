@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -53,7 +54,7 @@ public class Session
 
     private final IdentityMap identityMap;
 
-    private final List<Object> newObjects;
+    private final Map<Object, Object> newObjects;
 
     private final List<Object> deletedObjects;
 
@@ -74,7 +75,7 @@ public class Session
         this.identityMap = new IdentityMap(metadataMap);
         this.cypherMapper = new CypherQueryMapper(identityMap, metadataMap);
         this.graphResultMapper = new GraphResultMapper(identityMap, metadataMap);
-        this.newObjects = new ArrayList<>();
+        this.newObjects = new LinkedHashMap<>();
         this.deletedObjects = new ArrayList<>();
     }
 
@@ -96,7 +97,7 @@ public class Session
         Transaction txn = getTransaction();
         List<Statement> statements = new ArrayList<>();
 
-        for (Object newObject : newObjects)
+        for (Object newObject : newObjects.values())
         {
             List<Statement> newStatements = cypherMapper.merge(newObject);
             statements.addAll(newStatements);
@@ -216,7 +217,6 @@ public class Session
         else
         {
             return results.iterator().next();
-
         }
     }
 
@@ -271,6 +271,11 @@ public class Session
 
     public <T> void save(T entity)
     {
+        if (entity.getClass().isArray())
+        {
+            throw new UnsupportedOperationException("OGM does not currently support arrays.");
+        }
+
         if (Iterable.class.isAssignableFrom(entity.getClass()))
         {
             saveAll((Iterable<T>) entity);
@@ -281,7 +286,7 @@ public class Session
             Object neo4jId = metadata.getNeo4jIdField().getValue(entity);
             if (neo4jId == null)
             {
-                newObjects.add(entity);
+                newObjects.put(metadata.getPrimaryIdField().getValue(entity), entity);
             }
         }
 
@@ -297,6 +302,11 @@ public class Session
 
     public <T> void delete(T entity)
     {
+        if (entity.getClass().isArray())
+        {
+            throw new UnsupportedOperationException("OGM does not currently support arrays.");
+        }
+
         if (Iterable.class.isAssignableFrom(entity.getClass()))
         {
             deleteAll((Iterable<T>) entity);
