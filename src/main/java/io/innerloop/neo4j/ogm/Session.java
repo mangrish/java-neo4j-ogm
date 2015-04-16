@@ -97,11 +97,13 @@ public class Session
         Transaction txn = getTransaction();
         List<Statement> statements = new ArrayList<>();
 
+        //TODO: Fix new object addition (and look at deletion as well).
         for (Object newObject : newObjects.values())
         {
             List<Statement> newStatements = cypherMapper.merge(newObject);
             statements.addAll(newStatements);
         }
+        LOG.debug("Adding [{}] new object & relationship statemnts", statements.size());
 
         for (Object dirtyObject : identityMap.getDirtyObjects())
         {

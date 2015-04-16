@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -232,8 +233,8 @@ public class CypherQueryMapper
 
     public <T> List<Statement> merge(T entity)
     {
-        List<Statement> nodeStatements = new ArrayList<>();
-        List<Statement> relationshipStatements = new ArrayList<>();
+        LinkedHashSet<Statement> nodeStatements = new LinkedHashSet<>();
+        LinkedHashSet<Statement> relationshipStatements = new LinkedHashSet<>();
 
         Stack<Object> toVisit = new Stack<>();
         IdentityHashMap<Object, Object> visited = new IdentityHashMap<>();
@@ -315,13 +316,13 @@ public class CypherQueryMapper
                 }
             }
         }
-        List<Statement> results = new ArrayList<>();
+        LinkedHashSet<Statement> results = new LinkedHashSet<>();
         results.addAll(nodeStatements);
         results.addAll(relationshipStatements);
-        return results;
+        return new ArrayList<>(results);
     }
 
-    private void addRelationshipStatement(List<Statement> relationshipStatements,
+    private void addRelationshipStatement(LinkedHashSet<Statement> relationshipStatements,
                                           Stack<Object> toVisit,
                                           IdentityHashMap<Object, Object> visited,
                                           Object ref,
