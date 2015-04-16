@@ -576,7 +576,7 @@ public class EndToEndTests
         }
     }
 
-//    @Test
+    @Test
     public void canSupportWeightedRelationships() throws Neo4jClientException
     {
         SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.complex");
@@ -641,7 +641,7 @@ public class EndToEndTests
             transaction2.begin();
             Subject java = session2.load(Subject.class, "name", "Java Programming Language");
             assertNotNull(java);
-            assertEquals(java.getAliases().size(), 2);
+            assertEquals(java.getAliases().size(), 3);
             assertEquals(java.getCategories().size(), 1);
 
             transaction2.commit();

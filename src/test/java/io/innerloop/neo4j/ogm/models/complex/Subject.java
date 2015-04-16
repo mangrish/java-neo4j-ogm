@@ -54,8 +54,7 @@ public class Subject
 
     private String disambiguation;
 
-    @Fetch
-    private Map<Subject, Double> requiredKnowledge;
+    private transient Map<Subject, Double> requiredKnowledge;
 
     private Set<Category> categories;
 
