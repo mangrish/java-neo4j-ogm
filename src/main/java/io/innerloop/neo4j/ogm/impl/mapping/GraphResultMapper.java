@@ -67,17 +67,23 @@ public class GraphResultMapper
 
             if (type.isAssignableFrom(instance.getClass()))
             {
-                //TODO: Check if params matches up with the object.
-                final Object finalInstance = instance;
-                long count = params.entrySet()
-                                     .stream()
-                                     .filter(e -> clsMetadata.getProperty(e.getKey())
-                                                          .getValue(finalInstance)
-                                                          .equals(e.getValue()))
-                                     .count();
-                if (count == 1)
+                if (params == null) // This means it's a load(Class) call.. this is a pretty bad semantic.
                 {
                     results.add((T) instance);
+                }
+                else
+                {
+                    final Object finalInstance = instance;
+                    long count = params.entrySet()
+                                         .stream()
+                                         .filter(e -> clsMetadata.getProperty(e.getKey())
+                                                              .getValue(finalInstance)
+                                                              .equals(e.getValue()))
+                                         .count();
+                    if (count == 1)
+                    {
+                        results.add((T) instance);
+                    }
                 }
             }
 
