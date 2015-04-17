@@ -1,5 +1,6 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
+import io.innerloop.neo4j.ogm.annotations.RelationshipProperties;
 import io.innerloop.neo4j.ogm.annotations.Transient;
 import io.innerloop.neo4j.ogm.impl.index.Index;
 import org.reflections.Reflections;
@@ -31,6 +32,8 @@ public class MetadataMap
 
     private Map<Class<?>, ClassMetadata> lookupByClass;
 
+    private Map<Class<?>, RelationshipPropertiesClassMetadata> lookupRelationshipPropertiesByClass;
+
     private Map<NodeLabel, ClassMetadata<?>> lookupByNodeLabel;
 
     private Reflections reflections;
@@ -41,6 +44,7 @@ public class MetadataMap
 
         this.lookupByClass = new HashMap<>();
         this.lookupByNodeLabel = new HashMap<>();
+        this.lookupRelationshipPropertiesByClass = new HashMap<>();
 
         List<Class<?>> classesToProcess = new ArrayList<>();
         List<Class<?>> interfacesToProcess = new ArrayList<>();
@@ -51,7 +55,12 @@ public class MetadataMap
             {
                 Class<?> aClass = Class.forName(type);
 
-                if (aClass.isInterface())
+                if (aClass.isAnnotationPresent(RelationshipProperties.class))
+                {
+                    RelationshipPropertiesClassMetadata<?> classMetadata = new RelationshipPropertiesClassMetadata<>(aClass);
+                    lookupRelationshipPropertiesByClass.put(aClass, classMetadata);
+                }
+                else if (aClass.isInterface())
                 {
                     LOG.trace("Marking interface as Processable: [{}]", aClass.getName());
                     interfacesToProcess.add(aClass);
@@ -154,5 +163,10 @@ public class MetadataMap
         }
 
         return indexes;
+    }
+
+    public RelationshipPropertiesClassMetadata getRelationshipPropertiesClassMetadata(Class<?> propertiesClass)
+    {
+        return lookupRelationshipPropertiesByClass.get(propertiesClass);
     }
 }

@@ -6,6 +6,8 @@ import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by markangrish on 28/01/2015.
@@ -20,13 +22,17 @@ public class RelationshipMetadata
 
     private final Class<?> type;
 
+    private boolean map;
+
     private boolean collection;
 
-    private Class<?> paramterizedType;
+    private Class<?>[] paramterizedTypes;
 
     private boolean fetchEnabled;
 
     private String name;
+
+    private Map<String, Object> properties;
 
 
     public RelationshipMetadata(String name, Relationship.Direction direction, Field field)
@@ -45,7 +51,13 @@ public class RelationshipMetadata
         if (Collection.class.isAssignableFrom(field.getType()))
         {
             collection = true;
-            paramterizedType = ReflectionUtils.getParameterizedType(field);
+            paramterizedTypes = ReflectionUtils.getParameterizedTypes(field);
+        }
+        if (Map.class.isAssignableFrom(field.getType()))
+        {
+            map = true;
+            paramterizedTypes = ReflectionUtils.getParameterizedTypes(field);
+            properties = new HashMap<>();
         }
 
         this.field.setAccessible(true);
@@ -56,9 +68,14 @@ public class RelationshipMetadata
         return collection;
     }
 
-    public Class<?> getParamterizedType()
+    public boolean isMap()
     {
-        return paramterizedType;
+        return map;
+    }
+
+    public Class<?>[] getParamterizedTypes()
+    {
+        return paramterizedTypes;
     }
 
     public boolean isFetchEnabled()
@@ -107,5 +124,10 @@ public class RelationshipMetadata
     public Class<?> getType()
     {
         return type;
+    }
+
+    public Map<String, Object> getProperties()
+    {
+        return properties;
     }
 }

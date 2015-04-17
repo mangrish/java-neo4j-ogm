@@ -26,8 +26,6 @@ public class PropertyMetadata
 
     private final Class<?> type;
 
-    private boolean iterable;
-
     private Class<?> paramterizedType;
 
     private Converter converter;
@@ -50,8 +48,7 @@ public class PropertyMetadata
 
         if (Iterable.class.isAssignableFrom(type))
         {
-            iterable = true;
-            paramterizedType = ReflectionUtils.getParameterizedType(field);
+            paramterizedType = ReflectionUtils.getParameterizedTypes(field)[0];
         }
         if (field.isAnnotationPresent(Convert.class))
         {
@@ -79,11 +76,6 @@ public class PropertyMetadata
     public String getName()
     {
         return name;
-    }
-
-    public boolean isIterable()
-    {
-        return iterable;
     }
 
     public Class<?> getParamterizedType()

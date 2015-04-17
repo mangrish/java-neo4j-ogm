@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -27,9 +28,16 @@ public class ReflectionUtils
         return currentClassFields;
     }
 
-    public static Class<?> getParameterizedType(Field field)
+    public static Class<?>[] getParameterizedTypes(Field field)
     {
         ParameterizedType t = (ParameterizedType) field.getGenericType();
-        return (Class<?>) t.getActualTypeArguments()[0];
+        Type[] actualTypeArguments = t.getActualTypeArguments();
+
+        Class<?>[] result = new Class<?>[actualTypeArguments.length];
+        for (int i = 0; i < actualTypeArguments.length; i++)
+        {
+            result[i] = (Class<?>) actualTypeArguments[i];
+        }
+        return result;
     }
 }

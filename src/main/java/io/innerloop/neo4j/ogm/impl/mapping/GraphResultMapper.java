@@ -5,8 +5,9 @@ import io.innerloop.neo4j.client.Node;
 import io.innerloop.neo4j.client.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
-import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.NodeLabel;
+import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
+import io.innerloop.neo4j.ogm.impl.metadata.RelationshipPropertiesClassMetadata;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +33,7 @@ public class GraphResultMapper
         this.metadataMap = metadataMap;
     }
 
-    public <T> List<T> map(Class<T> type, Graph graph)
+    public <T> List<T> map(Class<T> type, Graph graph, Map<String, Object> params)
     {
         Map<Long, Object> createRelationshipsFor = new HashMap<>();
         List<T> results = new ArrayList<>();
@@ -66,7 +67,18 @@ public class GraphResultMapper
 
             if (type.isAssignableFrom(instance.getClass()))
             {
-                results.add((T) instance);
+                //TODO: Check if params matches up with the object.
+                final Object finalInstance = instance;
+                long count = params.entrySet()
+                                     .stream()
+                                     .filter(e -> clsMetadata.getProperty(e.getKey())
+                                                          .getValue(finalInstance)
+                                                          .equals(e.getValue()))
+                                     .count();
+                if (count == 1)
+                {
+                    results.add((T) instance);
+                }
             }
 
         }
@@ -107,6 +119,19 @@ public class GraphResultMapper
                     rm.setValue(collection, start);
                 }
                 collection.add(end);
+            }
+            else if (rm.isMap())
+            {
+                Map map = (Map) rm.getValue(start);
+                if (map == null)
+                {
+                    map = new HashMap<>();
+                    rm.setValue(map, start);
+                }
+                Class<?> propertiesClass = rm.getParamterizedTypes()[1];
+                RelationshipPropertiesClassMetadata rpcm = metadataMap.getRelationshipPropertiesClassMetadata(propertiesClass);
+                Object relationshipProperties = rpcm.createInstance(relationship.getProperties());
+                map.put(end, relationshipProperties);
             }
             else
             {

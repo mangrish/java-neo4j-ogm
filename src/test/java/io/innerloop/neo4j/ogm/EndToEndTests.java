@@ -14,6 +14,7 @@ import io.innerloop.neo4j.ogm.models.cineasts.Role;
 import io.innerloop.neo4j.ogm.models.complex.Alias;
 import io.innerloop.neo4j.ogm.models.complex.Category;
 import io.innerloop.neo4j.ogm.models.complex.Subject;
+import io.innerloop.neo4j.ogm.models.complex.WeightedRelationship;
 import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -33,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static junit.framework.Assert.fail;
@@ -610,6 +612,8 @@ public class EndToEndTests
             s3.addAlias(new Alias("OOP"));
             s3.addCategory(c6);
 
+
+
             Subject s1 = new Subject("Java Programming Language");
             s1.addAlias(new Alias("Java"));
             s1.addAlias(new Alias("J2SE"));
@@ -634,6 +638,27 @@ public class EndToEndTests
             session.close();
         }
 
+        Session session3 = sessionFactory.getCurrentSession();
+        Transaction transaction3 = session3.getTransaction();
+        try
+        {
+            transaction3.begin();
+            Category c6 = session3.load(Category.class, "name", "Concepts");
+            Subject java = session3.load(Subject.class, "name", "Java Programming Language");
+            assertNotNull(java);
+
+            Subject s4 = new Subject("Functional Programming");
+            s4.addCategory(c6);
+            session3.save(s4);
+            java.requires(s4, 0.3);
+
+            transaction3.commit();
+        }
+        finally
+        {
+            session3.close();
+        }
+
         Session session2 = sessionFactory.getCurrentSession();
         Transaction transaction2 = session2.getTransaction();
         try
@@ -641,6 +666,9 @@ public class EndToEndTests
             transaction2.begin();
             Subject java = session2.load(Subject.class, "name", "Java Programming Language");
             assertNotNull(java);
+            assertEquals(2, java.getRequiredKnowledge().size());
+            assertTrue(Double.compare(0.9,
+                                      java.getWeightedRequiredKnowledge().values().iterator().next().getWeight()) == 0);
             assertEquals(java.getAliases().size(), 3);
             assertEquals(java.getCategories().size(), 1);
 

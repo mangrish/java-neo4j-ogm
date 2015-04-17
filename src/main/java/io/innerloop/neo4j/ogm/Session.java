@@ -159,7 +159,7 @@ public class Session
             GraphStatement statement = cypherMapper.executeGraph(cypher, parameters);
             flush(statement);
             Graph graph = statement.getResult();
-            return graphResultMapper.map(type, graph);
+            return graphResultMapper.map(type, graph, parameters);
         }
 
     }
@@ -241,7 +241,7 @@ public class Session
         flush(statement);
         Graph graph = statement.getResult();
 
-        return graphResultMapper.map(type, graph);
+        return graphResultMapper.map(type, graph, properties);
 
     }
 

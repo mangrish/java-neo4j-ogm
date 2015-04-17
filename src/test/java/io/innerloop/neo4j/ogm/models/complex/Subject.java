@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Created by markangrish on 07/04/2014.
@@ -54,7 +55,8 @@ public class Subject
 
     private String disambiguation;
 
-    private transient Map<Subject, Double> requiredKnowledge;
+    @Fetch
+    private Map<Subject, WeightedRelationship> requiredKnowledge;
 
     private Set<Category> categories;
 
@@ -106,7 +108,7 @@ public class Subject
 
     public void requires(Subject subject, double correlation)
     {
-        requiredKnowledge.put(subject, correlation);
+        requiredKnowledge.put(subject, new WeightedRelationship(correlation));
     }
 
     public Set<Alias> getAliases()
@@ -117,5 +119,19 @@ public class Subject
     public Set<Category> getCategories()
     {
         return categories;
+    }
+
+    public Map<Subject, WeightedRelationship> getWeightedRequiredKnowledge()
+    {
+        return requiredKnowledge;
+    }
+
+    public List<Subject> getRequiredKnowledge()
+    {
+        return requiredKnowledge.entrySet()
+                       .stream()
+                       .sorted((o1, o2) -> Double.compare(o1.getValue().getWeight(), o2.getValue().getWeight()))
+                       .map(Map.Entry::getKey)
+                       .collect(Collectors.toList());
     }
 }

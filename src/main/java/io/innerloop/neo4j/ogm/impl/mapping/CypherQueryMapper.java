@@ -9,13 +9,13 @@ import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
+import io.innerloop.neo4j.ogm.impl.metadata.RelationshipPropertiesClassMetadata;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -136,9 +136,12 @@ public class CypherQueryMapper
                 Class<?> relationshipCls = rm.getType();
                 if (rm.isCollection())
                 {
-                    relationshipCls = rm.getParamterizedType();
+                    relationshipCls = rm.getParamterizedTypes()[0];
                 }
-
+                if (rm.isMap())
+                {
+                    relationshipCls = rm.getParamterizedTypes()[0];
+                }
                 if (!relationshipCls.isAnnotationPresent(Aggregate.class) && !rm.isFetchEnabled())
                 {
                     continue;
@@ -184,6 +187,15 @@ public class CypherQueryMapper
                     query += ", r" + i;
                 }
                 relationshipCount++;
+
+                Pair<Class<?>, Integer> prevKey = new Pair<>(relationshipCls, currentDepth - 1);
+                String prev = usage.get(prevKey);
+                if (prev != null && relationshipCls.equals(cls))
+                {
+                    LOG.debug("CYCLE DETECTED. Preventing loading of next cycle.");
+                    continue;
+                }
+
                 toVisit.offer(relationshipCls);
             }
 
@@ -282,7 +294,7 @@ public class CypherQueryMapper
                     ClassMetadata<?> edgeClassMetadata;
                     if (edge instanceof Iterable)
                     {
-                        edgeClassMetadata = metadataMap.get((Class) rm.getParamterizedType());
+                        edgeClassMetadata = metadataMap.get(rm.getParamterizedTypes()[0]);
 
                         for (Object o : (Iterable) edge)
                         {
@@ -299,6 +311,30 @@ public class CypherQueryMapper
                                                      rm,
                                                      o,
                                                      edgeClassMetadata);
+                        }
+                    }
+                    else if (edge instanceof Map)
+                    {
+                        edgeClassMetadata = metadataMap.get(rm.getParamterizedTypes()[0]);
+                        RelationshipPropertiesClassMetadata relationshipPropertiesClassMetadata = metadataMap.getRelationshipPropertiesClassMetadata(rm.getParamterizedTypes()[1]);
+
+                        Map map = (Map) edge;
+                        for (Object o : map.keySet())
+                        {
+                            if (edgeClassMetadata == null)
+                            {
+                                edgeClassMetadata = metadataMap.get((Class) o.getClass());
+                            }
+                            Object v = map.get(o);
+                            addMappedRelationshipStatement(relationshipStatements,
+                                                           toVisit,
+                                                           visited,
+                                                           ref,
+                                                           classMetadata,
+                                                           rm,
+                                                           o,
+                                                           edgeClassMetadata,
+                                                           relationshipPropertiesClassMetadata, v);
                         }
                     }
                     else
@@ -356,6 +392,51 @@ public class CypherQueryMapper
                                                               "(b)");
         relationshipStatement.setParam("0", classMetadata.getPrimaryIdField().getValue(ref));
         relationshipStatement.setParam("1", edgeClassMetadata.getPrimaryIdField().getValue(edge));
+        relationshipStatements.add(relationshipStatement);
+
+        if (!visited.containsKey(edge))
+        {
+            toVisit.push(edge);
+        }
+    }
+
+    private void addMappedRelationshipStatement(LinkedHashSet<Statement> relationshipStatements,
+                                                Stack<Object> toVisit,
+                                                IdentityHashMap<Object, Object> visited,
+                                                Object ref,
+                                                ClassMetadata<?> classMetadata,
+                                                RelationshipMetadata rm,
+                                                Object edge,
+                                                ClassMetadata<?> edgeClassMetadata,
+                                                RelationshipPropertiesClassMetadata relationshipPropertiesClassMetadata,
+                                                Object v)
+    {
+        RowStatement relationshipStatement = new RowStatement("MATCH (a" +
+                                                              classMetadata.getNodeLabel().asCypher() +
+                                                              "{" +
+                                                              classMetadata.getPrimaryIdField().getName() +
+                                                              ":{0}}), (b" +
+                                                              edgeClassMetadata.getNodeLabel().asCypher() +
+                                                              "{" +
+                                                              edgeClassMetadata.getPrimaryIdField().getName() +
+                                                              ":{1}}) MERGE (a)" +
+                                                              (rm.getDirection()
+                                                                       .equals(Relationship.Direction.INCOMING) ?
+                                                                       "<" :
+                                                                       "") +
+                                                              "-" +
+                                                              "[r:" +
+                                                              rm.getName() +
+                                                              "]" +
+                                                              "-" +
+                                                              (rm.getDirection()
+                                                                       .equals(Relationship.Direction.OUTGOING) ?
+                                                                       ">" :
+                                                                       "") +
+                                                              "(b) SET r = {2}");
+        relationshipStatement.setParam("0", classMetadata.getPrimaryIdField().getValue(ref));
+        relationshipStatement.setParam("1", edgeClassMetadata.getPrimaryIdField().getValue(edge));
+        relationshipStatement.setParam("2", relationshipPropertiesClassMetadata.toJsonObject(v));
         relationshipStatements.add(relationshipStatement);
 
         if (!visited.containsKey(edge))

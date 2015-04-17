@@ -76,6 +76,7 @@ public class ClassMetadata<T>
             Class<?> fieldClass = field.getType();
             String fieldName = field.getName();
             boolean isCollectionType = Iterable.class.isAssignableFrom(fieldClass);
+            boolean isMapType = Map.class.isAssignableFrom(fieldClass);
 
             if (fieldName.equals("id") && fieldClass.equals(Long.class))
             {
@@ -103,9 +104,9 @@ public class ClassMetadata<T>
             }
 
             Class parametrizedCls = null;
-            if (isCollectionType)
+            if (isCollectionType || isMapType)
             {
-                parametrizedCls = ReflectionUtils.getParameterizedType(field);
+                parametrizedCls = ReflectionUtils.getParameterizedTypes(field)[0];
             }
 
             boolean isRelationshipClass = false;
@@ -117,7 +118,7 @@ public class ClassMetadata<T>
                 }
             }
 
-            if ((isCollectionType && (parametrizedCls != null && !(Primitives.isWrapperType(parametrizedCls) ||
+            if (((isCollectionType || isMapType) && (parametrizedCls != null && !(Primitives.isWrapperType(parametrizedCls) ||
                                                                    String.class.isAssignableFrom(parametrizedCls) || parametrizedCls.isEnum()))) ||
                 isRelationshipClass)
             {
@@ -236,6 +237,14 @@ public class ClassMetadata<T>
                 hash = hash * 31L + hash(value.toString());
             }
         }
+        for (RelationshipMetadata rm: relationshipMetadata.values())
+        {
+            Object value = rm.getValue(object);
+            if (value != null)
+            {
+                hash = hash * 31L + hash(value.toString());
+            }
+        }
 
         return hash;
     }
@@ -244,4 +253,11 @@ public class ClassMetadata<T>
     {
         return indexes.values();
     }
+
+    public PropertyMetadata getProperty(String key)
+    {
+        return propertyMetadata.get(key);
+    }
+
+
 }
