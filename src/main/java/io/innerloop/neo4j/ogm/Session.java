@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -95,33 +96,30 @@ public class Session
     private void flush(Statement statement)
     {
         Transaction txn = getTransaction();
-        List<Statement> statements = new ArrayList<>();
+        LinkedHashSet<Statement> statements = new LinkedHashSet<>();
 
-        //TODO: Fix new object addition (and look at deletion as well).
-        for (Object newObject : newObjects.values())
-        {
-            List<Statement> newStatements = cypherMapper.merge(newObject);
-            statements.addAll(newStatements);
-        }
-        LOG.debug("Adding [{}] new object & relationship statemnts", statements.size());
+        newObjects.values().forEach(e -> cypherMapper.merge(e).forEach(statements::add));
 
-        for (Object dirtyObject : identityMap.getDirtyObjects())
-        {
-            statements.addAll(cypherMapper.merge(dirtyObject));
-        }
+        LOG.trace("Statements to execute after adding NEW objects: [{}]", statements.size());
 
-        for (Object deletedObject : deletedObjects)
-        {
-            statements.addAll(cypherMapper.delete(deletedObject));
-        }
+        identityMap.getDirtyObjects().forEach(d -> cypherMapper.merge(d).forEach(statements::add));
+
+        LOG.trace("Statements to execute after adding DIRTY objects: [{}]", statements.size());
+
+        deletedObjects.forEach(e -> cypherMapper.delete(e).forEach(statements::add));
+
+        LOG.trace("Statements to execute after adding DELETED objects: [{}]", statements.size());
 
         if (statement != null)
         {
             statements.add(statement);
         }
 
+        LOG.debug("Prepared to flush [{}] statements to database ", statements.size());
+
         statements.forEach(txn::add);
         txn.flush();
+
         identityMap.refresh();
         newObjects.clear();
         deletedObjects.clear();

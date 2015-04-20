@@ -77,7 +77,7 @@ public class GraphResultMapper
                     long count = params.entrySet()
                                          .stream()
                                          .filter(e -> clsMetadata.getProperty(e.getKey())
-                                                              .getValue(finalInstance)
+                                                              .getRawValue(finalInstance)
                                                               .equals(e.getValue()))
                                          .count();
                     if (count == 1)

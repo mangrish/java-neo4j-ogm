@@ -7,12 +7,15 @@ import io.innerloop.neo4j.ogm.impl.index.Index;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by markangrish on 18/12/2014.
  */
 public class SessionFactory
 {
+    private static final Logger LOG = LoggerFactory.getLogger(SessionFactory.class);
     private final Neo4jClient client;
 
     private final MetadataMap metadataMap;
@@ -22,6 +25,15 @@ public class SessionFactory
         this.metadataMap = new MetadataMap(packages);
         this.client = client;
         buildIndexes();
+        Runtime.getRuntime().addShutdownHook(new Thread()
+        {
+            @Override
+            public void run()
+            {
+                //TODO: figure out how to close any active connections. probably need a registry.
+                LOG.info("Closing all active connections");
+            }
+        });
     }
 
     private void buildIndexes()

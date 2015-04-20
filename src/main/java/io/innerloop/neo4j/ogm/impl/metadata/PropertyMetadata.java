@@ -187,4 +187,21 @@ public class PropertyMetadata
         }
         return o;
     }
+
+    public Object getRawValue(Object ref)
+    {
+        Object o;
+        try
+        {
+
+            o = field.get(ref);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new RuntimeException("Could get the value of field: [" + fieldName + "] on class: [" +
+                                       field.getDeclaringClass() +
+                                       "] for object [" + ref + "]. Does this field exist and is it accessible?", e);
+        }
+        return o;
+    }
 }

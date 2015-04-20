@@ -667,8 +667,6 @@ public class EndToEndTests
             Subject java = session2.load(Subject.class, "name", "Java Programming Language");
             assertNotNull(java);
             assertEquals(2, java.getRequiredKnowledge().size());
-            assertTrue(Double.compare(0.3,
-                                      java.getWeightedRequiredKnowledge().values().iterator().next().getWeight()) == 0);
             assertEquals(java.getAliases().size(), 3);
             assertEquals(java.getCategories().size(), 1);
 
