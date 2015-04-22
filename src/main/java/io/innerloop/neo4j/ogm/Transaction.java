@@ -18,6 +18,7 @@ public class Transaction
 
     private boolean committed;
 
+    private boolean rolledBack;
 
     public Transaction(Session session)
     {
@@ -46,21 +47,23 @@ public class Transaction
         session.flush();
         connection.commit();
         this.committed = true;
+        session.completeTransaction();
     }
 
     public void rollback()
     {
         connection.rollback();
-        this.committed = false;
+        this.rolledBack = true;
+        session.completeTransaction();
     }
 
     public boolean isOpen()
     {
-        return !committed;
+        return !committed && !rolledBack;
     }
 
     public boolean isClosed()
     {
-        return committed;
+        return committed || rolledBack;
     }
 }

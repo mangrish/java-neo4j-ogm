@@ -343,4 +343,16 @@ public class Session
         }
         return activeTransaction;
     }
+
+    public void completeTransaction()
+    {
+        if (activeTransaction.isClosed())
+        {
+            this.activeTransaction = null;
+        }
+        else
+        {
+            throw new RuntimeException("Could not close transaction.");
+        }
+    }
 }

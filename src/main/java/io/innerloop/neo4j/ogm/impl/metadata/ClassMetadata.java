@@ -256,6 +256,10 @@ public class ClassMetadata<T>
 
     public PropertyMetadata getProperty(String key)
     {
+        if (key.equals(primaryIdField.getName()))
+        {
+            return primaryIdField;
+        }
         return propertyMetadata.get(key);
     }
 

@@ -128,7 +128,7 @@ public class PropertyMetadata
                     }
                     val = convertedVals;
                 }
-                LOG.debug("Field [{}] of type: [{}] SET with value: [{}] of type [{}].",
+                LOG.trace("Field [{}] of type: [{}] SET with value: [{}] of type [{}].",
                           field.getName(),
                           field.getType().getSimpleName(),
                           val,
@@ -136,7 +136,7 @@ public class PropertyMetadata
             }
             else
             {
-                LOG.debug("Field [{}] of type: [{}] SET with null value.",
+                LOG.trace("Field [{}] of type: [{}] SET with null value.",
                           field.getName(),
                           field.getType().getSimpleName());
             }
@@ -174,7 +174,7 @@ public class PropertyMetadata
                     }
                 }
             }
-            LOG.debug("Field [{}] of type: [{}] RETRIEVED with value: [{}].",
+            LOG.trace("Field [{}] of type: [{}] RETRIEVED with value: [{}].",
                       field.getName(),
                       field.getType().getSimpleName(),
                       o);

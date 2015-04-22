@@ -1,8 +1,12 @@
 package io.innerloop.neo4j.ogm;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import io.innerloop.neo4j.client.Connection;
 import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Neo4jClientException;
+import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.ogm.models.bike.Bike;
 import io.innerloop.neo4j.ogm.models.bike.Frame;
 import io.innerloop.neo4j.ogm.models.bike.Saddle;
@@ -14,8 +18,6 @@ import io.innerloop.neo4j.ogm.models.cineasts.Role;
 import io.innerloop.neo4j.ogm.models.complex.Alias;
 import io.innerloop.neo4j.ogm.models.complex.Category;
 import io.innerloop.neo4j.ogm.models.complex.Subject;
-import io.innerloop.neo4j.ogm.models.complex.WeightedRelationship;
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -24,8 +26,6 @@ import org.junit.Test;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.slf4j.LoggerFactory;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -34,11 +34,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static junit.framework.Assert.fail;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -49,7 +50,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class EndToEndTests
 {
-    private static final Logger LOG = (Logger)LoggerFactory.getLogger(EndToEndTests.class);
+    private static final Logger LOG = (Logger) LoggerFactory.getLogger(EndToEndTests.class);
 
     private Neo4jClient client;
 
@@ -58,7 +59,7 @@ public class EndToEndTests
     @BeforeClass
     public static void oneTimeSetUp()
     {
-        LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         Logger rootLogger = loggerContext.getLogger("io.innerloop.neo4j");
         rootLogger.setLevel(Level.DEBUG);
     }
@@ -293,7 +294,7 @@ public class EndToEndTests
             frame.addGearRatio("2");
             frame.addGearRatio("3");
             frame.addGearRatio("4");
-            Set<Bike.Logo> logos =  new HashSet<>();
+            Set<Bike.Logo> logos = new HashSet<>();
             logos.add(Bike.Logo.LOGO_1);
             logos.add(Bike.Logo.LOGO_2);
             bike.setBrand("Huffy");
@@ -326,8 +327,8 @@ public class EndToEndTests
             {
                 fail("Frame was expected to be instance of SpeedFrame");
             }
-            SpeedFrame sf = (SpeedFrame)actual2.getFrame();
-            assertEquals(frame.getGearRatios().size(),sf.getGearRatios().size());
+            SpeedFrame sf = (SpeedFrame) actual2.getFrame();
+            assertEquals(frame.getGearRatios().size(), sf.getGearRatios().size());
             assertEquals(bike.getWheels().size(), actual2.getWheels().size());
             transaction.commit();
         }
@@ -356,8 +357,8 @@ public class EndToEndTests
             HashMap<String, Object> parameters = new HashMap<>();
             parameters.put("material", expected.getMaterial());
             Integer actual = session.queryForObject(Integer.class,
-                                                "MATCH (saddle:Saddle{material:{material}}) RETURN COUNT(saddle)",
-                                                parameters);
+                                                    "MATCH (saddle:Saddle{material:{material}}) RETURN COUNT(saddle)",
+                                                    parameters);
             transaction.commit();
             assertEquals(1, actual.intValue());
         }
@@ -477,7 +478,7 @@ public class EndToEndTests
             frame.addGearRatio("2");
             frame.addGearRatio("3");
             frame.addGearRatio("4");
-            Set<Bike.Logo> logos =  new HashSet<>();
+            Set<Bike.Logo> logos = new HashSet<>();
             logos.add(Bike.Logo.LOGO_1);
             logos.add(Bike.Logo.LOGO_2);
             bike.setBrand("Huffy");
@@ -500,13 +501,13 @@ public class EndToEndTests
         try
         {
             transaction2.begin();
-            Bike bike = session2.load(Bike.class,"brand", "Huffy");
+            Bike bike = session2.load(Bike.class, "brand", "Huffy");
             Saddle newSaddle = new Saddle();
             newSaddle.setPrice(19.95);
             newSaddle.setMaterial("Vinyl");
             bike.setSaddle(newSaddle);
-            ((SpeedFrame)bike.getFrame()).addGearRatio("5");
-            Set<Bike.Logo> logos =  new HashSet<>();
+            ((SpeedFrame) bike.getFrame()).addGearRatio("5");
+            Set<Bike.Logo> logos = new HashSet<>();
             logos.add(Bike.Logo.LOGO_1);
             logos.add(Bike.Logo.LOGO_2);
             logos.add(Bike.Logo.LOGO_3);
@@ -525,9 +526,9 @@ public class EndToEndTests
         try
         {
             transaction3.begin();
-            Bike bike = session3.load(Bike.class,"brand", "Huffy");
+            Bike bike = session3.load(Bike.class, "brand", "Huffy");
             assertEquals(bike.getLogos().size(), 4);
-            assertEquals(((SpeedFrame)bike.getFrame()).getGearRatios().size(), 5);
+            assertEquals(((SpeedFrame) bike.getFrame()).getGearRatios().size(), 5);
             transaction3.commit();
         }
         finally
@@ -613,7 +614,6 @@ public class EndToEndTests
             s3.addCategory(c6);
 
 
-
             Subject s1 = new Subject("Java Programming Language");
             s1.addAlias(new Alias("Java"));
             s1.addAlias(new Alias("J2SE"));
@@ -675,6 +675,89 @@ public class EndToEndTests
         finally
         {
             session2.close();
+        }
+    }
+
+    @Test
+    public void testMultipleThreadsInsertingCompoundStatements() throws InterruptedException
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
+
+        ExecutorService service = Executors.newFixedThreadPool(10);
+        CountDownLatch latch = new CountDownLatch(500);
+
+        for (int i = 1; i <= 50; i++)
+        {
+            service.execute(new InsertJob(latch, i, sessionFactory));
+        }
+
+        latch.await();
+
+        //check if the nodes were inserted
+        Session session = sessionFactory.getCurrentSession();
+        Transaction transaction = session.getTransaction();
+        try
+        {
+            transaction.begin();
+            Integer numberOfBikes = session.queryForObject(Integer.class,
+                                                                "MATCH (n:Bike) RETURN count(n) as number_of_bikes",
+                                                                new HashMap<>());
+            transaction.commit();
+
+            assertNotNull(numberOfBikes);
+            assertEquals(500, numberOfBikes.intValue());
+
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    private class InsertJob implements Runnable
+    {
+        private final CountDownLatch latch;
+
+        private final int id;
+
+        private final SessionFactory sessionFactory;
+
+        public InsertJob(CountDownLatch latch, int i, SessionFactory sessionFactory)
+        {
+            this.latch = latch;
+            this.id = i;
+            this.sessionFactory = sessionFactory;
+        }
+
+        @Override
+        public void run()
+        {
+            Session session = sessionFactory.getCurrentSession();
+            Transaction transaction = session.getTransaction();
+            try
+            {
+                transaction.begin();
+                for (int i = 1; i <= 10; i++)
+                {
+                    Bike bike = session.load(Bike.class, "brand", "brand ["+ id + i + "]");
+
+                    if (bike == null)
+                    {
+                        bike = new Bike();
+                    }
+                    bike.setBrand("brand ["+ id + i + "]");
+                    session.save(bike);
+                }
+                transaction.commit();
+            }
+            finally
+            {
+                session.close();
+            }
+            for (int i = 0; i < 10; i++)
+            {
+                latch.countDown();
+            }
         }
     }
 }

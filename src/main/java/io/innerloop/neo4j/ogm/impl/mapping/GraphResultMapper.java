@@ -6,6 +6,7 @@ import io.innerloop.neo4j.client.Relationship;
 import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.NodeLabel;
+import io.innerloop.neo4j.ogm.impl.metadata.PropertyMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipPropertiesClassMetadata;
 
@@ -35,8 +36,8 @@ public class GraphResultMapper
 
     public <T> List<T> map(Class<T> type, Graph graph, Map<String, Object> params)
     {
-        Map<Long, Object> createRelationshipsFor = new HashMap<>();
-        List<T> results = new ArrayList<>();
+        Map<Long, Object> objects = new HashMap<>();
+        Map<Long, T> results = new HashMap<>();
 
         for (Node node : graph.getNodes())
         {
@@ -55,50 +56,47 @@ public class GraphResultMapper
                 throw new RuntimeException("No Metadata available for this label/s: [" + key + "]");
             }
 
-            Object instance = identityMap.get(node.getId());
+            Object instance = objects.get(node.getId());
 
             if (instance == null)
             {
                 Map<String, Object> properties = node.getProperties();
                 instance = clsMetadata.createInstance(node.getId(), properties);
-                identityMap.put(node.getId(), instance);
-                createRelationshipsFor.put(node.getId(), instance);
+                objects.put(node.getId(), instance);
             }
 
             if (type.isAssignableFrom(instance.getClass()))
             {
                 if (params == null) // This means it's a load(Class) call.. this is a pretty bad semantic.
                 {
-                    results.add((T) instance);
+                    results.put(node.getId(),  (T) instance);
                 }
                 else
                 {
-                    final Object finalInstance = instance;
-                    long count = params.entrySet()
-                                         .stream()
-                                         .filter(e -> clsMetadata.getProperty(e.getKey())
-                                                              .getRawValue(finalInstance)
-                                                              .equals(e.getValue()))
-                                         .count();
-                    if (count == 1)
+                    for (Map.Entry<String, Object> e: params.entrySet())
                     {
-                        results.add((T) instance);
+                        PropertyMetadata property = clsMetadata.getProperty(e.getKey());
+
+                        if (property == null) // this means it's from a cypher query.. again a bad semantic
+                        {
+                            results.put(node.getId(),  (T) instance);
+                        }
+                        else
+                        {
+                            if (property.getRawValue(instance).equals(e.getValue()))
+                            {
+                                results.put(node.getId(),  (T) instance);
+                            }
+                        }
                     }
                 }
             }
 
-        }
-        for (Relationship relationship : graph.getRelationships())
+        } for (Relationship relationship : graph.getRelationships())
         {
-            Object start = identityMap.get(relationship.getStartNodeId());
-            Object end = identityMap.get(relationship.getEndNodeId());
+            Object start = objects.get(relationship.getStartNodeId());
+            Object end = objects.get(relationship.getEndNodeId());
 
-            boolean createRelationship = createRelationshipsFor.containsKey(relationship.getStartNodeId());
-
-            if (start == null || !createRelationship)
-            {
-                continue;
-            }
 
             String relationshipType = relationship.getType();
             ClassMetadata clsMetadata = metadataMap.get(start);
@@ -143,8 +141,24 @@ public class GraphResultMapper
             {
                 rm.setValue(end, start);
             }
-
         }
-        return results;
+
+        for (Map.Entry<Long, Object> e: objects.entrySet()) {
+            Object existing = identityMap.get(e.getKey());
+
+            if (existing == null)
+            {
+                identityMap.put(e.getKey(), e.getValue());
+            }
+        }
+
+        List<T> filteredResults = new ArrayList<>();
+
+        for (Map.Entry<Long, T> e: results.entrySet())
+        {
+            filteredResults.add((T)identityMap.get(e.getKey()));
+        }
+
+        return filteredResults;
     }
 }
