@@ -243,6 +243,15 @@ public class Session
 
     }
 
+    public <T> T loadById(Class<T> type, Object id)
+    {
+        ClassMetadata<T> classMetadata = metadataMap.get(type);
+        String idField = classMetadata.getPrimaryIdField().getName();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put(idField, id);
+        return load(type, parameters);
+    }
+
     public <T> T load(Class<T> type, Map<String, Object> properties)
     {
         Iterable<T> results = loadAll(type, properties);

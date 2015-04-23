@@ -439,11 +439,7 @@ public class EndToEndTests
 
             session.save(bike);
 
-            HashMap<String, Object> parameters2 = new HashMap<>();
-            parameters2.put("brand", "Huffy");
-            Bike actual = session.queryForObject(Bike.class,
-                                                 "MATCH (bike:Bike{brand:{brand}})-[rels]-() RETURN bike, COLLECT(DISTINCT rels) as rels",
-                                                 parameters2);
+            Bike actual = session.loadById(Bike.class, bike.getUuid());
             transaction.commit();
 
             assertEquals(bike.getUuid(), actual.getUuid());
