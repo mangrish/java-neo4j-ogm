@@ -9,7 +9,10 @@
 ### Gradle template
 .gradle
 build/
+data/
+target/
 *.iml
 *.ipr
 *.iws
+.gradletasknamecache
 .DS_Store
