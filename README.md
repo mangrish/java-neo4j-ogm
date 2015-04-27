@@ -1,36 +1,30 @@
 java-neo4j-ogm
 ==============
 
-A minimalist Java Object Graph Mapper (OGM) to connect to Neo4J instances.
+A minimalist Java Object Graph Mapper (OGM) for Neo4J.
 
 [![Build Status](https://travis-ci.org/inner-loop/java-neo4j-ogm.svg?branch=master)](https://travis-ci.org/inner-loop/java-neo4j-ogm)
 
-The Java Neo4J OGM offers a simple mechanism to map java classes to a standalone Neo4J Graph Database.
-
-Spring Data Neo4J offers advanced features to map annotated entity classes to the Neo4j Graph Database. 
-The template programming model is equivalent to well known Spring templates and builds the basis for interaction with 
-the graph and is also used for the advanced repository support. Spring Data Neo4j is part of the Spring Data project
- which aims to provide convenient support for NoSQL databases.
 
 # Features
 
-1. Mapping of POJO's to Neo4J Nodes with minimal use of annotations.
+1. Mapping of POJO's to Neo4J Nodes & Relationships with minimal use of annotations.
 1. First class support for Cypher querying with automatic domain mapping of results.
 1. Persistence by reachability. No need to call save() for objects already in the database!
-1. Support for automatic retrieval of aggregates via the @Aggregate annotation.
+1. Built with Rich Domains in mind!  Support for automatic retrieval of [DDD](http://en.wikipedia.org/wiki/Domain-driven_design) aggregates via the ```@Aggregate``` annotation.
 1. Annotation overriding for when defaults aren't good enough.
-1. Fast class scanning on startup with Google Reflections.
+1. Fast class scanning on startup with [Reflections](https://github.com/ronmamo/reflections).
 1. Efficient statement batching thanks to [Java Neo4J Client](https://github.com/inner-loop/java-neo4j-client) Connections.
-1. Simple mechanism to add database field conversion.
-1. Support for maps and collection ordering via relationship properties (Coming soon).
+1. Out of the box support for maps and relationship properties.
 
-## Installation
 
-**Note hasn't been deployed to maven yet. Please build from source for now. **
+# Quick Start
 
-The OGM is written for and requires Java 8+ and Neo4J 2.2 Standalone Database.
+The Java Neo4J OGM is written for and requires Java 8+ and Neo4J 2.2+ Standalone Database.
 
-To install from Maven:
+## Install from Maven
+
+Add the following to your ```<dependencies> .. </dependencies>``` section.
 
 ```maven
 <dependency>
@@ -40,11 +34,20 @@ To install from Maven:
 </dependency>
 ```
 
-To install from Gradle:
+## Install from Gradle
+
+Add the following to your ```dependencies { .. }``` section.
 
 ```gradle
 compile group: 'io.innerloop', name: 'java-neo4j-ogm', version: '0.1.0'
 ```
+
+... or more simply:
+
+```gradle
+compile: 'io.innerloop:java-neo4j-ogm:0.1.0'
+```
+
 
 # Usage
 
@@ -78,7 +81,7 @@ If you want out of the box Spring support right now check out the
 
 I plan on adding spring support in a later release.
 
-## Differences between Spring Data Neo4J
+## Comparison with Spring Data Neo4J.
 
 - This OGM does not support the concept of "Relationship Entities" natively. Relationships in a Neo4J Database provide
 metadata about the relationship between two nodes. Instead, relationships with properties can be modelled with defining ordering 
