@@ -3,6 +3,7 @@ java-neo4j-ogm
 
 A minimalist Java Object Graph Mapper (OGM) to connect to Neo4J instances.
 
+[![Build Status](https://travis-ci.org/inner-loop/java-neo4j-ogm.svg?branch=master)](https://travis-ci.org/inner-loop/java-neo4j-ogm)
 
 The Java Neo4J OGM offers a simple mechanism to map java classes to a standalone Neo4J Graph Database.
 
