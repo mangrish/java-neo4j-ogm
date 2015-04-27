@@ -1,9 +1,15 @@
 java-neo4j-ogm
 ==============
 
-A lightweight Java Object Graph Mapper (OGM) for standalone Neo4J instances.
+A minimalist Java Object Graph Mapper (OGM) to connect to Neo4J instances.
 
-This library does not support embedded Neo4J instances.
+
+The Java Neo4J OGM offers a simple mechanism to map java classes to a standalone Neo4J Graph Database.
+
+Spring Data Neo4J offers advanced features to map annotated entity classes to the Neo4j Graph Database. 
+The template programming model is equivalent to well known Spring templates and builds the basis for interaction with 
+the graph and is also used for the advanced repository support. Spring Data Neo4j is part of the Spring Data project
+ which aims to provide convenient support for NoSQL databases.
 
 # Features
 

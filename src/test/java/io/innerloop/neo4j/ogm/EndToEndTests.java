@@ -3,10 +3,8 @@ package io.innerloop.neo4j.ogm;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import io.innerloop.neo4j.client.Connection;
 import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Neo4jClientException;
-import io.innerloop.neo4j.client.RowStatement;
 import io.innerloop.neo4j.ogm.models.bike.Bike;
 import io.innerloop.neo4j.ogm.models.bike.Frame;
 import io.innerloop.neo4j.ogm.models.bike.Saddle;
@@ -23,8 +21,12 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.server.WrappingNeoServerBootstrapper;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -52,9 +54,16 @@ public class EndToEndTests
 {
     private static final Logger LOG = (Logger) LoggerFactory.getLogger(EndToEndTests.class);
 
+    private static final int DEFAULT_NEO_PORT = 7575;
+
     private Neo4jClient client;
 
-    private CommunityNeoServer server;
+    private int neoServerPort = -1;
+
+    private GraphDatabaseService database;
+
+    private WrappingNeoServerBootstrapper bootstrapper;
+
 
     @BeforeClass
     public static void oneTimeSetUp()
@@ -64,29 +73,63 @@ public class EndToEndTests
         rootLogger.setLevel(Level.DEBUG);
     }
 
+    private static int findOpenLocalPort()
+    {
+        try (ServerSocket socket = new ServerSocket(0))
+        {
+            return socket.getLocalPort();
+        }
+        catch (IOException e)
+        {
+            System.err.println("Unable to establish local port due to IOException: " + e.getMessage() +
+                               "\nDefaulting instead to use: " + DEFAULT_NEO_PORT);
+            e.printStackTrace(System.err);
+
+            return DEFAULT_NEO_PORT;
+        }
+    }
+
     @Before
     public void setUp() throws IOException, InterruptedException
     {
-        int port = new ServerSocket(0).getLocalPort();
-
-        LOG.info("Starting community Neo4j server on port [{}]", port);
-        server = CommunityServerBuilder.server().onPort(port).build();
-        server.start();
-
-        while (!server.getDatabase().isRunning())
+        database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Runtime.getRuntime().addShutdownHook(new Thread()
+        {
+            @Override
+            public void run()
+            {
+                database.shutdown();
+            }
+        });
+        ServerConfigurator configurator = new ServerConfigurator((GraphDatabaseAPI) database);
+        int port = neoServerPort();
+        configurator.configuration().addProperty(Configurator.WEBSERVER_PORT_PROPERTY_KEY, port);
+        configurator.configuration().addProperty("dbms.security.auth_enabled", false);
+        bootstrapper = new WrappingNeoServerBootstrapper((GraphDatabaseAPI) database, configurator);
+        bootstrapper.start();
+        while (!bootstrapper.getServer().getDatabase().isRunning())
         {
             // It's ok to spin here.. it's not production code.
             Thread.sleep(250);
         }
-        LOG.info("Community Neo4j server started");
-
         client = new Neo4jClient("http://localhost:" + port + "/db/data");
     }
 
-    @After
-    public void tearDown()
+    protected int neoServerPort()
     {
-        server.stop();
+        if (neoServerPort < 0)
+        {
+            neoServerPort = findOpenLocalPort();
+        }
+        return neoServerPort;
+    }
+
+    @After
+    public void tearDown() throws IOException, InterruptedException
+    {
+        bootstrapper.stop();
+        database.shutdown();
+        client = null;
     }
 
     @AfterClass
@@ -696,8 +739,8 @@ public class EndToEndTests
         {
             transaction.begin();
             Integer numberOfBikes = session.queryForObject(Integer.class,
-                                                                "MATCH (n:Bike) RETURN count(n) as number_of_bikes",
-                                                                new HashMap<>());
+                                                           "MATCH (n:Bike) RETURN count(n) as number_of_bikes",
+                                                           new HashMap<>());
             transaction.commit();
 
             assertNotNull(numberOfBikes);
@@ -735,13 +778,13 @@ public class EndToEndTests
                 transaction.begin();
                 for (int i = 1; i <= 10; i++)
                 {
-                    Bike bike = session.load(Bike.class, "brand", "brand ["+ id + i + "]");
+                    Bike bike = session.load(Bike.class, "brand", "brand [" + id + i + "]");
 
                     if (bike == null)
                     {
                         bike = new Bike();
                     }
-                    bike.setBrand("brand ["+ id + i + "]");
+                    bike.setBrand("brand [" + id + i + "]");
                     session.save(bike);
                 }
                 transaction.commit();
