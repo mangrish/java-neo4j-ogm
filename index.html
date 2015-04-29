@@ -26,6 +26,8 @@
 
 <p><a href="https://travis-ci.org/inner-loop/java-neo4j-ogm"><img src="https://travis-ci.org/inner-loop/java-neo4j-ogm.svg?branch=master" alt="Build Status"></a></p>
 
+<p>java-neo4j-ogm is a server first, cypher centric Java mapper for Neo4J. </p>
+
 <h1>
 <a id="features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features</h1>
 
@@ -35,9 +37,15 @@
 <li>Persistence by reachability. No need to call save() for objects already in the database!</li>
 <li>Built with Rich Domains in mind!  Support for automatic retrieval of <a href="http://en.wikipedia.org/wiki/Domain-driven_design">DDD</a> aggregates via the <code>@Aggregate</code> annotation.</li>
 <li>Annotation overriding for when defaults aren't good enough.</li>
-<li>Fast class scanning on startup with <a href="https://github.com/ronmamo/reflections">Reflections</a>.</li>
-<li>Efficient statement batching thanks to <a href="https://github.com/inner-loop/java-neo4j-client">Java Neo4J Client</a> Connections.</li>
 <li>Out of the box support for maps and relationship properties.</li>
+<li>Designed for performance:
+
+<ol>
+<li>Fast class scanning on startup with <a href="https://github.com/ronmamo/reflections">Reflections</a>.</li>
+<li>Efficient unit of work statement batching thanks to <a href="https://github.com/inner-loop/java-neo4j-client">Java Neo4J Client</a> Connections.</li>
+<li>Non uniform depth retrieval. Only load the nodes and relationships you need.</li>
+</ol>
+</li>
 </ol>
 
 <h1>
@@ -83,18 +91,107 @@
 of a <a href="https://github.com/inner-loop/java-neo4j-client/blob/master/src/main/java/io/innerloop/neo4j/client/Neo4jClient.java">Neo4JClient</a>
  as well as the location of the base of the domain POJO's you would like to be mapped (or an array of locations).</p>
 
-<p>Classes must:</p>
+<div class="highlight highlight-java"><pre><span class="pl-smi">Neo4jClient</span> client <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Neo4jClient</span>(<span class="pl-s"><span class="pl-pds">"</span>http://localhost:7474/db/data<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>neo4j<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>neo4j<span class="pl-pds">"</span></span>);
+<span class="pl-smi">SessionFactory</span> sessionFactory <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">SessionFactory</span>(client, <span class="pl-s"><span class="pl-pds">"</span>com.example.domain<span class="pl-pds">"</span></span>);</pre></div>
+
+<p>You can also supply several packages to the session factory:</p>
+
+<div class="highlight highlight-java"><pre><span class="pl-smi">SessionFactory</span> sessionFactory <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">SessionFactory</span>(client, <span class="pl-s"><span class="pl-pds">"</span>com.example.domain.subdomain1<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>com.example.domain.subdomain2<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>com.example.domain.subdomain3<span class="pl-pds">"</span></span>);</pre></div>
+
+<h2>
+<a id="conventions" class="anchor" href="#conventions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Conventions</h2>
+
+<p>There are a lot of conventions used by the OGM. These are the most important:</p>
 
 <ol>
-<li>Have a field of type <code>Long</code> called <code>id</code>. It may have any visibility modifier. Note that this ID should not
-be relied upon to be unique. It is an implementation detail exposed by Neo4J.</li>
-<li>Have a field marked with the annotation <code>@Id</code>. This field must hold a unique identifier for that Class.</li>
+<li>Managed classes must have a field of type <code>Long</code> called <code>id</code>. It may have any visibility modifier. Note that this ID should not be relied upon to be unique. It is an implementation detail exposed by Neo4J.</li>
+<li>Managed classes need no annotations to become managed. As long as they are in the packages defined when constructing the <code>SessionFactory</code> they will be managed.</li>
+<li>Managed classes must have one and only one field annotated with <code>@Id</code>.</li>
+<li>Relationships don't need to be annotated unless you want to change the relationship name or want to consider directionality.</li>
+<li>
+<code>Map</code>s may be used at the field level. To use a map simply define the relationship type in the first parameter and a class annotated with <code>@RelationshipProperties</code> as the second parameter.</li>
+<li>To ignore classes in scanning mark them with the <code>@Transient</code> annotation.</li>
+<li>To ignore fields simply use the <code>transient</code> java keyword.</li>
 </ol>
 
-<p>To ignore classes in scanning mark them with the <code>@Transient</code> annotation.</p>
+<h3>
+<a id="annotations" class="anchor" href="#annotations" aria-hidden="true"><span class="octicon octicon-link"></span></a>Annotations</h3>
 
-<p>It's worth noting that this OGM does not support lazy loading by default. This will probably be partially supported in the
-next release.</p>
+<p>Below is a handy reference of all the annotations used in the OGM.</p>
+
+<table>
+<thead>
+<tr>
+<th align="left">Annotation Name</th>
+<th align="left">Arguments</th>
+<th align="left">May appear on</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>@Aggregate</code></td>
+<td align="left">None</td>
+<td align="left">Class</td>
+<td align="left">Indicates this class is an aggregate of whatever class holds a reference to it.</td>
+</tr>
+<tr>
+<td align="left"><code>@Convert</code></td>
+<td align="left">
+<strong>value:</strong> Name of Converter class.</td>
+<td align="left">Field</td>
+<td align="left">Will apply the specified converter to this field. Converter must implement Converter.java</td>
+</tr>
+<tr>
+<td align="left"><code>@Fetch</code></td>
+<td align="left">None</td>
+<td align="left">Field</td>
+<td align="left">Will eagerly fetch the specified object/collection of objects managed by the OGM</td>
+</tr>
+<tr>
+<td align="left"><code>@Id</code></td>
+<td align="left">None</td>
+<td align="left">Field</td>
+<td align="left">This field must hold a unique identifier for that Class.</td>
+</tr>
+<tr>
+<td align="left"><code>@Indexed</code></td>
+<td align="left">
+<strong>unique:</strong> True if this index should be a constraint and not allow duplicates.</td>
+<td align="left">Field</td>
+<td align="left">This field will be registered as an index in the database.</td>
+</tr>
+<tr>
+<td align="left"><code>@Relationship</code></td>
+<td align="left">
+<strong>type:</strong> A unique name that represents this relationship. Will default to the name of the field. <strong>direction:</strong> The Direction of the relationship. Defaults to Undirected.</td>
+<td align="left">Field</td>
+<td align="left">This field will register the current object and the target as a relationship with the specified properties</td>
+</tr>
+<tr>
+<td align="left"><code>@RelationshipProperties</code></td>
+<td align="left">None</td>
+<td align="left">Class</td>
+<td align="left">Indicates that this class should be used to define the properties of a relationship. Typically used with Maps.</td>
+</tr>
+<tr>
+<td align="left">
+<code>@Target</code>(IN DEVELOPMENT)</td>
+<td align="left">
+<strong>value:</strong> Name of Target class (Must be managed by OGM).</td>
+<td align="left">Field</td>
+<td align="left">Field must match the <a href="https://github.com/Id" class="user-mention">@Id</a> type of the Target class. This will keep the rich relationship but not eagerly load the entity. Field can also be a collection of <a href="https://github.com/Id" class="user-mention">@Id</a>'s.</td>
+</tr>
+<tr>
+<td align="left"><code>@Transient</code></td>
+<td align="left">None</td>
+<td align="left">Class</td>
+<td align="left">Indicates that this class should be skipped by the OGM.</td>
+</tr>
+</tbody>
+</table>
+
+<p>You might notice there is no <a href="https://github.com/Entity" class="user-mention">@Entity</a> or <a href="https://github.com/Property" class="user-mention">@Property</a>. Typically these are done to overwrite names. Right now there is no real need for these annotations. They may make an appearance in future though!</p>
 
 <h1>
 <a id="examples" class="anchor" href="#examples" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h1>
@@ -208,11 +305,16 @@ next release.</p>
     <span class="pl-smi">User</span> mark <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">User</span>(<span class="pl-s"><span class="pl-pds">"</span>@markanrish<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Mark Angrish<span class="pl-pds">"</span></span>);
     mark<span class="pl-k">.</span>post(<span class="pl-k">new</span> <span class="pl-smi">Tweet</span>(<span class="pl-s"><span class="pl-pds">"</span>Here is an awesome Tweet!<span class="pl-pds">"</span></span>);
 
+    <span class="pl-c">// Save the object. At this point there will be no communication with the DB.</span>
     session<span class="pl-k">.</span>save(mark);
 
+    <span class="pl-c">// Flush() force the session to apply all statements held to the database.</span>
     transaction<span class="pl-k">.</span>flush();
 
     <span class="pl-smi">User</span> twitterUser <span class="pl-k">=</span> session<span class="pl-k">.</span>load(<span class="pl-smi">User</span><span class="pl-k">.</span>class, <span class="pl-s"><span class="pl-pds">"</span>username<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>@markangrish<span class="pl-pds">"</span></span>);
+
+    <span class="pl-c">// Commit() will not only flush() the transaction but finalise and commit it to make all actions in the transaction</span>
+    <span class="pl-c">// permanent in the database.</span>
     transaction<span class="pl-k">.</span>commit();
 
     <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(<span class="pl-s"><span class="pl-pds">"</span>Is the twitterUser Mark? [<span class="pl-pds">"</span></span> <span class="pl-k">+</span> twitterUser<span class="pl-k">.</span>getUsername()<span class="pl-k">.</span>equals(mark<span class="pl-k">.</span>getUsername()) <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">"</span>]<span class="pl-pds">"</span></span>);
@@ -220,12 +322,13 @@ next release.</p>
 }
 <span class="pl-k">finally</span>
 {
+    <span class="pl-c">// this must be called to ensure session consistency.</span>
     session<span class="pl-k">.</span>close();
 }
 </pre></div>
 
 <h1>
-<a id="spring-support" class="anchor" href="#spring-support" aria-hidden="true"><span class="octicon octicon-link"></span></a>Spring Support</h1>
+<a id="springguice-support" class="anchor" href="#springguice-support" aria-hidden="true"><span class="octicon octicon-link"></span></a>Spring/Guice Support</h1>
 
 <p>This is a simple Java OGM for Neo4J. This OGM is designed to be used
 agnostic of any other framework, library or middleware.</p>
@@ -233,17 +336,7 @@ agnostic of any other framework, library or middleware.</p>
 <p>If you want out of the box Spring support right now check out the 
 <a href="http://docs.spring.io/spring-data/neo4j/docs/4.0.0.M1/">Spring Data Neo4J project</a> (of which I'm also a contributor!)</p>
 
-<p>I plan on adding spring support in a later release.</p>
-
-<h2>
-<a id="comparison-with-spring-data-neo4j" class="anchor" href="#comparison-with-spring-data-neo4j" aria-hidden="true"><span class="octicon octicon-link"></span></a>Comparison with Spring Data Neo4J.</h2>
-
-<ul>
-<li>This OGM does not support the concept of "Relationship Entities" natively. Relationships in a Neo4J Database provide
-metadata about the relationship between two nodes. Instead, relationships with properties can be modelled with defining ordering 
-or grouping semantics (e.g. order a list of objects by a relationship property called 'weight' etc.).</li>
-<li>If you only do things "the Spring way" then this project is probably not for you!</li>
-</ul>
+<p>I will be adding Guice support very soon (probably in another repo). Spring will follow after that.</p>
 
 <h1>
 <a id="feature-requests--roadmap" class="anchor" href="#feature-requests--roadmap" aria-hidden="true"><span class="octicon octicon-link"></span></a>Feature Requests / Roadmap</h1>
@@ -251,7 +344,7 @@ or grouping semantics (e.g. order a list of objects by a relationship property c
 <p>Do you have a feature request? <a href="https://github.com/inner-loop/java-neo4j-ogm/issues/new">Create a new Issue</a>.</p>
 
 <h2>
-<a id="backlog" class="anchor" href="#backlog" aria-hidden="true"><span class="octicon octicon-link"></span></a>Backlog</h2>
+<a id="upcoming-features-and-fixes" class="anchor" href="#upcoming-features-and-fixes" aria-hidden="true"><span class="octicon octicon-link"></span></a>Upcoming features and fixes</h2>
 
 <ul>
 <li>Automatic registration of default converters</li>
