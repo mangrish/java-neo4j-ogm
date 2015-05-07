@@ -5,8 +5,6 @@ import io.innerloop.neo4j.client.Neo4jClient;
 import io.innerloop.neo4j.client.Neo4jClientException;
 import io.innerloop.neo4j.ogm.impl.index.Index;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +14,7 @@ import org.slf4j.LoggerFactory;
 public class SessionFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionFactory.class);
+
     private final Neo4jClient client;
 
     private final MetadataMap metadataMap;
@@ -66,5 +65,15 @@ public class SessionFactory
     public Session getCurrentSession()
     {
         return Session.getSession(client, metadataMap);
+    }
+
+    public void close()
+    {
+
+    }
+
+    public boolean isOpen()
+    {
+        return true;
     }
 }
