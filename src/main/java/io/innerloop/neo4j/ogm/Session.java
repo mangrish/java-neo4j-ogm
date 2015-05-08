@@ -119,7 +119,11 @@ public class Session
 
         statements.forEach(txn::add);
         txn.flush();
+        clear();
+    }
 
+    public void clear()
+    {
         identityMap.refresh();
         newObjects.clear();
         deletedObjects.clear();

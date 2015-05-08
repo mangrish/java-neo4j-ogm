@@ -62,6 +62,11 @@ public class Transaction
         return !committed && !rolledBack;
     }
 
+    public boolean isActive()
+    {
+        return !committed && !rolledBack;
+    }
+
     public boolean isClosed()
     {
         return committed || rolledBack;
