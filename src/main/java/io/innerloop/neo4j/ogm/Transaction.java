@@ -44,6 +44,10 @@ public class Transaction
 
     public void commit()
     {
+        if (isClosed())
+        {
+            throw new RuntimeException("Transaction is already completed. Cannot commit.");
+        }
         session.flush();
         connection.commit();
         this.committed = true;
@@ -52,6 +56,10 @@ public class Transaction
 
     public void rollback()
     {
+        if (isClosed())
+        {
+            LOG.warn("Transaction is already completed. Cannot rollback.");
+        }
         connection.rollback();
         this.rolledBack = true;
         session.completeTransaction();
