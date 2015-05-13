@@ -92,7 +92,19 @@ public class PropertyMetadata
             {
                 if (converter != null)
                 {
-                    val = converter.deserialize(value);
+                    Object longCheckedVal = val;
+                    try
+                    {
+                        if (converter.getClass().getMethod("deserialize", Long.class) != null)
+                        {
+                            longCheckedVal = ((Number) value).longValue();
+                        }
+                    }
+                    catch (NoSuchMethodException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    val = converter.deserialize(longCheckedVal);
                 }
                 else if (type.isEnum())
                 {
@@ -121,7 +133,7 @@ public class PropertyMetadata
                 }
                 else if (List.class.isAssignableFrom(type) && paramterizedType != null && paramterizedType.isEnum())
                 {
-                    Set convertedVals = new HashSet<>();
+                    List convertedVals = new ArrayList<>();
                     for (Object e : (List) value)
                     {
                         convertedVals.add(Enum.valueOf((Class<Enum>) type.getComponentType(), (String) e));

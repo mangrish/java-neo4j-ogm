@@ -1,7 +1,9 @@
 package io.innerloop.neo4j.ogm.converters;
 
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 /**
@@ -19,6 +21,6 @@ public class LocalDateConverter implements Converter<LocalDate, Long>
     @Override
     public LocalDate deserialize(Long millis)
     {
-        return LocalDate.ofEpochDay(millis);
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.UTC).toLocalDate();
     }
 }
