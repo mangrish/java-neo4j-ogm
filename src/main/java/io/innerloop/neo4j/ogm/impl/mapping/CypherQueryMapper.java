@@ -10,6 +10,7 @@ import io.innerloop.neo4j.ogm.impl.metadata.ClassMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.MetadataMap;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipMetadata;
 import io.innerloop.neo4j.ogm.impl.metadata.RelationshipPropertiesClassMetadata;
+import io.innerloop.neo4j.ogm.impl.util.StopWatch;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by markangrish on 28/01/2015.
@@ -33,6 +35,8 @@ import java.util.Stack;
 public class CypherQueryMapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(CypherQueryMapper.class);
+
+    private static ConcurrentHashMap<MatchStatementKey, GraphStatement> matchStatements = new ConcurrentHashMap<>();
 
     private static String alphaUsed(Map<Pair<Class<?>, Integer>, String> usage)
     {
@@ -77,159 +81,175 @@ public class CypherQueryMapper
         {
             throw new RuntimeException("Type to match must not be null");
         }
+        LOG.trace("Building match statement for type: [{}] with  params: [{}]", type.getSimpleName(), parameters);
 
-        Queue<Class<?>> toVisit = new LinkedList<>();
-        Map<Pair<Class<?>, Integer>, String> usage = new HashMap<>();
-        Sequence sequence = new Sequence();
-        String query;
+        MatchStatementKey msKey = new MatchStatementKey(type, parameters!= null ? parameters.keySet(): null);
 
-        ClassMetadata<T> first = metadataMap.get(type);
+        GraphStatement statement = matchStatements.get(msKey);
 
-        if (first == null)
+        if (statement == null)
         {
-            if (type.isInterface() || Modifier.isAbstract(type.getModifiers()))
+            StopWatch sw = new StopWatch("MATCH Statement Builder", LOG);
+            sw.start();
+
+            Queue<Class<?>> toVisit = new LinkedList<>();
+            Map<Pair<Class<?>, Integer>, String> usage = new HashMap<>();
+            Sequence sequence = new Sequence();
+            String query;
+
+            ClassMetadata<T> first = metadataMap.get(type);
+
+            if (first == null)
             {
-                LOG.debug("Type to match is an interface/abstract class [{}]. Pushing subtypes on to stack.", type);
-                query = "MATCH (a:" + type.getSimpleName() + ")";
+                if (type.isInterface() || Modifier.isAbstract(type.getModifiers()))
+                {
+                    LOG.debug("Type to match is an interface/abstract class [{}]. Pushing subtypes on to stack.", type);
+                    query = "MATCH (a:" + type.getSimpleName() + ")";
+                }
+                else
+                {
+                    throw new RuntimeException("Could not find a type to match on for: [" + type.getName() + "]");
+                }
             }
             else
             {
-                throw new RuntimeException("Could not find a type to match on for: [" + type.getName() + "]");
-            }
-        }
-        else
-        {
-            query = "MATCH (a" + first.getNodeLabel().asCypher() + ")";
-        }
-
-        toVisit.offer(type);
-
-        int relationshipCount = 1;
-        int currentDepth = 0;
-        int elementsToDepthIncrease = 1;
-        int nextElementsToDepthIncrease = 0;
-
-        final Pair<Class<?>, Integer> parentKey = new Pair<>(type, currentDepth);
-        usage.put(parentKey, sequence.computeNext());
-
-        while (!toVisit.isEmpty())
-        {
-            Class<?> cls = toVisit.poll();
-            Pair<Class<?>, Integer> key = new Pair<>(cls, currentDepth);
-
-            if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
-            {
-                Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(cls);
-                subTypesOf.forEach(k -> {
-                    if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
-                    {
-                        toVisit.offer(k);
-                    }
-                });
-                continue;
+                query = "MATCH (a" + first.getNodeLabel().asCypher() + ")";
             }
 
-            ClassMetadata<?> classMetadata = metadataMap.get(cls);
+            toVisit.offer(type);
 
-            for (RelationshipMetadata rm : classMetadata.getRelationships())
+            int relationshipCount = 1;
+            int currentDepth = 0;
+            int elementsToDepthIncrease = 1;
+            int nextElementsToDepthIncrease = 0;
+
+            final Pair<Class<?>, Integer> parentKey = new Pair<>(type, currentDepth);
+            usage.put(parentKey, sequence.computeNext());
+
+            while (!toVisit.isEmpty())
             {
-                Class<?> relationshipCls = rm.getType();
-                if (rm.isCollection())
+                Class<?> cls = toVisit.poll();
+                Pair<Class<?>, Integer> key = new Pair<>(cls, currentDepth);
+
+                if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
                 {
-                    relationshipCls = rm.getParamterizedTypes()[0];
-                }
-                if (rm.isMap())
-                {
-                    relationshipCls = rm.getParamterizedTypes()[0];
-                }
-                if (!relationshipCls.isAnnotationPresent(Aggregate.class) && !rm.isFetchEnabled())
-                {
+                    Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(cls);
+                    subTypesOf.forEach(k -> {
+                        if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
+                        {
+                            toVisit.offer(k);
+                        }
+                    });
                     continue;
                 }
 
-                LOG.debug("depth is [{}]", currentDepth);
-                String lhs = usage.get(key);
-                LOG.debug("LHS KEY: [{}]", key);
-                Pair<Class<?>, Integer> rhsKey = new Pair<>(relationshipCls, currentDepth + 1);
-                LOG.debug("RHS KEY: [{}]", rhsKey);
+                ClassMetadata<?> classMetadata = metadataMap.get(cls);
 
-                String rhs = usage.get(rhsKey);
-                if (rhs == null)
+                for (RelationshipMetadata rm : classMetadata.getRelationships())
                 {
-                    rhs = sequence.computeNext();
-                    if (relationshipCls.isInterface() || Modifier.isAbstract(relationshipCls.getModifiers()))
+                    Class<?> relationshipCls = rm.getType();
+                    if (rm.isCollection())
                     {
-                        Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(relationshipCls);
-                        final int finalCurrentDepth = currentDepth + 1;
-                        final String finalRhs = rhs;
-                        subTypesOf.forEach(k -> {
-                            if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
-                            {
-                                usage.put(new Pair<>(k, finalCurrentDepth), finalRhs);
-                            }
-                        });
-                        nextElementsToDepthIncrease += subTypesOf.size();
+                        relationshipCls = rm.getParamterizedTypes()[0];
                     }
-                    else
+                    if (rm.isMap())
                     {
-                        usage.put(new Pair<>(relationshipCls, currentDepth + 1), rhs);
-                        nextElementsToDepthIncrease++;
+                        relationshipCls = rm.getParamterizedTypes()[0];
+                    }
+                    if (!relationshipCls.isAnnotationPresent(Aggregate.class) && !rm.isFetchEnabled())
+                    {
+                        continue;
                     }
 
+                    LOG.debug("depth is [{}]", currentDepth);
+                    String lhs = usage.get(key);
+                    LOG.debug("LHS KEY: [{}]", key);
+                    Pair<Class<?>, Integer> rhsKey = new Pair<>(relationshipCls, currentDepth + 1);
+                    LOG.debug("RHS KEY: [{}]", rhsKey);
+
+                    String rhs = usage.get(rhsKey);
+                    if (rhs == null)
+                    {
+                        rhs = sequence.computeNext();
+                        if (relationshipCls.isInterface() || Modifier.isAbstract(relationshipCls.getModifiers()))
+                        {
+                            Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(relationshipCls);
+                            final int finalCurrentDepth = currentDepth + 1;
+                            final String finalRhs = rhs;
+                            subTypesOf.forEach(k -> {
+                                if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
+                                {
+                                    usage.put(new Pair<>(k, finalCurrentDepth), finalRhs);
+                                }
+                            });
+                            nextElementsToDepthIncrease += subTypesOf.size();
+                        }
+                        else
+                        {
+                            usage.put(new Pair<>(relationshipCls, currentDepth + 1), rhs);
+                            nextElementsToDepthIncrease++;
+                        }
+
+                    }
+
+                    query += " OPTIONAL MATCH (" + lhs + ")-[r" + relationshipCount + ":" + rm.getName() + "]-(" + rhs +
+                             ") ";
+                    query += "WITH " + alphaUsed(usage) + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" +
+                             relationshipCount;
+                    for (int i = 1; i < relationshipCount; i++)
+                    {
+                        query += ", r" + i;
+                    }
+                    relationshipCount++;
+
+                    Pair<Class<?>, Integer> prevKey = new Pair<>(relationshipCls, currentDepth - 1);
+                    String prev = usage.get(prevKey);
+                    if (prev != null && relationshipCls.equals(cls))
+                    {
+                        LOG.debug("CYCLE DETECTED. Preventing loading of next cycle.");
+                        continue;
+                    }
+
+                    toVisit.offer(relationshipCls);
                 }
 
-                query += " OPTIONAL MATCH (" + lhs + ")-[r" + relationshipCount + ":" + rm.getName() + "]-(" + rhs +
-                         ") ";
-                query += "WITH " + alphaUsed(usage) + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" +
-                         relationshipCount;
-                for (int i = 1; i < relationshipCount; i++)
+                if (--elementsToDepthIncrease == 0)
                 {
-                    query += ", r" + i;
+                    elementsToDepthIncrease = nextElementsToDepthIncrease;
+                    nextElementsToDepthIncrease = 0;
+                    currentDepth++;
                 }
-                relationshipCount++;
-
-                Pair<Class<?>, Integer> prevKey = new Pair<>(relationshipCls, currentDepth - 1);
-                String prev = usage.get(prevKey);
-                if (prev != null && relationshipCls.equals(cls))
-                {
-                    LOG.debug("CYCLE DETECTED. Preventing loading of next cycle.");
-                    continue;
-                }
-
-                toVisit.offer(relationshipCls);
             }
 
-            if (--elementsToDepthIncrease == 0)
+            sw.split("Completed statement.");
+
+            if (parameters != null)
             {
-                elementsToDepthIncrease = nextElementsToDepthIncrease;
-                nextElementsToDepthIncrease = 0;
-                currentDepth++;
-            }
-        }
-
-        if (parameters != null)
-        {
-            query += " WHERE ";
-            int numParams = parameters.size();
-            for (String key : parameters.keySet())
-            {
-                query += "a." + key + " = {" + key + "}";
-
-                if (--numParams > 0)
+                query += " WHERE ";
+                int numParams = parameters.size();
+                for (String key : parameters.keySet())
                 {
-                    query += ", ";
+                    query += "a." + key + " = {" + key + "}";
+
+                    if (--numParams > 0)
+                    {
+                        query += ", ";
+                    }
                 }
             }
+
+            query += " RETURN " + alphaUsed(usage);
+
+            for (int j = 1; j < relationshipCount; j++)
+            {
+                query += ", r" + j;
+            }
+
+            statement = new GraphStatement(query);
+            sw.stop();
+            // No need for put if absent type/checking semantics.. doesn't matter if this gets overwritten once or so.
+            matchStatements.put(msKey, statement);
         }
-
-        query += " RETURN " + alphaUsed(usage);
-
-        for (int j = 1; j < relationshipCount; j++)
-        {
-            query += ", r" + j;
-        }
-
-        GraphStatement statement = new GraphStatement(query);
 
         if (parameters != null)
         {
@@ -245,16 +265,22 @@ public class CypherQueryMapper
 
     public <T> List<Statement> merge(T entity)
     {
+        if (entity == null)
+        {
+            throw new RuntimeException("Type to match must not be null");
+        }
+
+        LOG.trace("Building merge statement for entity: [{}]", entity.getClass().getSimpleName());
+        StopWatch sw = new StopWatch("MERGE Statement Builder", LOG);
+        sw.start();
+
         LinkedHashSet<Statement> nodeStatements = new LinkedHashSet<>();
         LinkedHashSet<Statement> relationshipStatements = new LinkedHashSet<>();
 
         Stack<Object> toVisit = new Stack<>();
         IdentityHashMap<Object, Object> visited = new IdentityHashMap<>();
 
-        if (entity != null)
-        {
-            toVisit.push(entity);
-        }
+        toVisit.push(entity);
 
         while (!toVisit.isEmpty())
         {
@@ -334,7 +360,8 @@ public class CypherQueryMapper
                                                            rm,
                                                            o,
                                                            edgeClassMetadata,
-                                                           relationshipPropertiesClassMetadata, v);
+                                                           relationshipPropertiesClassMetadata,
+                                                           v);
                         }
                     }
                     else
@@ -355,6 +382,9 @@ public class CypherQueryMapper
         LinkedHashSet<Statement> results = new LinkedHashSet<>();
         results.addAll(nodeStatements);
         results.addAll(relationshipStatements);
+
+        sw.stop();
+
         return new ArrayList<>(results);
     }
 
@@ -517,6 +547,42 @@ public class CypherQueryMapper
         protected String computeNext()
         {
             return alpha(++now).toString();
+        }
+    }
+
+    private static class MatchStatementKey
+    {
+        final Class<?> type;
+
+        final Set<String> parameters;
+
+        public MatchStatementKey(Class<?> type, Set<String> parameters)
+        {
+            this.type = type;
+            this.parameters = parameters;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            MatchStatementKey that = (MatchStatementKey) o;
+
+            return !(type != null ? !type.equals(that.type) : that.type != null) &&
+                   !(parameters != null ? !parameters.equals(that.parameters) : that.parameters != null);
+
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = type != null ? type.hashCode() : 0;
+            result = 31 * result + (parameters != null ? parameters.hashCode() : 0);
+            return result;
         }
     }
 }

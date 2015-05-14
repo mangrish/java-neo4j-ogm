@@ -136,7 +136,7 @@ public class PropertyMetadata
                     List convertedVals = new ArrayList<>();
                     for (Object e : (List) value)
                     {
-                        convertedVals.add(Enum.valueOf((Class<Enum>) type.getComponentType(), (String) e));
+                        convertedVals.add(Enum.valueOf((Class<Enum>) paramterizedType, (String) e));
                     }
                     val = convertedVals;
                 }
