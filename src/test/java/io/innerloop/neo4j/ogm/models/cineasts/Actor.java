@@ -1,64 +1,44 @@
 package io.innerloop.neo4j.ogm.models.cineasts;
 
-/**
- * Created by markangrish on 17/12/2014.
- */
-
-
-import io.innerloop.neo4j.ogm.annotations.Convert;
-import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
-import io.innerloop.neo4j.ogm.converters.UUIDConverter;
-import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 
-public class Actor
+/**
+ * Created by markangrish on 07/05/2015.
+ */
+public class Actor extends Person
 {
-    private Long id;
-
-    @Id
-    @Convert(UUIDConverter.class)
-    private UUID uuid;
-
-    private String name;
-
-    @Relationship(direction = Relationship.Direction.OUTGOING)
-    private Set<Role> roles;
+    @Relationship(type = "ACTS_IN")
+    private Map<Movie, Role> roles = new HashMap<>();
 
     public Actor()
     {
-        // do nothing...
     }
 
-    public Actor(String name)
+    public Actor(int tmdbId,
+                 String name,
+                 LocalDate birthday,
+                 String birthplace,
+                 String biography,
+                 String profileImageUrl)
     {
-        this.uuid = UuidGenerator.generate();
-        this.name = name;
-        this.roles = new HashSet<>();
+        super(tmdbId, name, birthday, birthplace, biography, profileImageUrl);
     }
 
-    public Set<Role> getRoles()
-    {
-        return roles;
-    }
 
     public Role playedIn(Movie movie, String roleName)
     {
-        final Role role = new Role(this, movie, roleName);
-        roles.add(role);
+        final Role role = new Role(roleName);
+        roles.put(movie, role);
+        movie.addRole(this, role);
         return role;
     }
 
-    public String getName()
+    public Map<Movie, Role> getRoles()
     {
-        return name;
-    }
-
-    public void setName(String name)
-    {
-        this.name = name;
+        return roles;
     }
 }

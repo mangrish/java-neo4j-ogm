@@ -31,11 +31,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -168,10 +170,25 @@ public class EndToEndTests
         try
         {
             txn.begin();
-
-            Actor keanu = new Actor("Keanu Reeves");
-            Movie matrix = new Movie("Matrix", 1999);
-            keanu.playedIn(matrix, "Neo");
+            Actor keanu = new Actor(12,
+                                    "Keanu Reeves",
+                                    LocalDate.of(1969, 4, 14),
+                                    "Somewhere, USA",
+                                    "A dude",
+                                    "http://url");
+            Movie matrix = new Movie(75,
+                                     "Matrix",
+                                     "a movie",
+                                     "imdb",
+                                     "en",
+                                     "tagline",
+                                     LocalDate.of(1999, 5, 17),
+                                     117,
+                                     "trailer",
+                                     "homepage",
+                                     "studio",
+                                     "imageUrl",
+                                     "genre"); keanu.playedIn(matrix, "Neo");
 
             session.save(keanu);
 
@@ -182,13 +199,10 @@ public class EndToEndTests
             assertEquals(1, a.getRoles().size());
 
             List<Movie> movies = session.loadAll(Movie.class);
+            txn.commit();
 
             assertEquals(1, movies.size());
 
-            List<Role> roles = session.loadAll(Role.class);
-
-            assertEquals(1, roles.size());
-            txn.commit();
         }
         finally
         {
@@ -207,8 +221,21 @@ public class EndToEndTests
         {
             transaction.begin();
 
-            keanu = new Actor("Keanu Reeves");
-            Movie matrix = new Movie("Matrix", 1999);
+            keanu = new Actor(12, "Keanu Reeves", LocalDate.of(1969, 4, 14), "Somewhere, USA", "A dude", "http://url");
+            Movie matrix = new Movie(75,
+                                     "Matrix",
+                                     "a movie",
+                                     "imdb",
+                                     "en",
+                                     "tagline",
+                                     LocalDate.of(1999, 5, 17),
+                                     117,
+                                     "trailer",
+                                     "homepage",
+                                     "studio",
+                                     "imageUrl",
+                                     "genre");
+
             keanu.playedIn(matrix, "Neo");
             session.save(keanu);
             transaction.commit();
@@ -230,12 +257,9 @@ public class EndToEndTests
             assertEquals(0, actors.size());
             List<Movie> movies = session2.loadAll(Movie.class);
             assertEquals(1, movies.size());
-            List<Role> roles = session2.loadAll(Role.class);
-            assertEquals(1, roles.size());
-            Role role = roles.iterator().next();
-            assertNull(role.getActor());
+            Map<Actor, Role> roles = movies.get(0).getRoles();
+            assertEquals(0, roles.size());
             transaction2.commit();
-
         }
         finally
         {
@@ -255,8 +279,26 @@ public class EndToEndTests
 
             txn1.begin();
 
-            Actor keanu = new Actor("Keanu Reeves");
-            Movie matrix = new Movie("Matrix", 1999);
+            Actor keanu = new Actor(12,
+                                    "Keanu Reeves",
+                                    LocalDate.of(1969, 4, 14),
+                                    "Somewhere, USA",
+                                    "A dude",
+                                    "http://url");
+            Movie matrix = new Movie(75,
+                                     "Matrix",
+                                     "a movie",
+                                     "imdb",
+                                     "en",
+                                     "tagline",
+                                     LocalDate.of(1999, 5, 17),
+                                     117,
+                                     "trailer",
+                                     "homepage",
+                                     "studio",
+                                     "imageUrl",
+                                     "genre");
+
             keanu.playedIn(matrix, "Neo");
             session.save(keanu);
 
@@ -264,7 +306,24 @@ public class EndToEndTests
             assertEquals(1, actors.size());
 
             Actor newKeanu = actors.iterator().next();
-            newKeanu.playedIn(new Movie("Bill and Ted's Excellent Adventure", 1986), "Bill");
+
+            assertEquals(keanu, newKeanu);
+
+            Movie billAndTeds = new Movie(102,
+                                          "Bill and Teds",
+                                          "a movie",
+                                          "imdb",
+                                          "en",
+                                          "tagline",
+                                          LocalDate.of(1986, 5, 17),
+                                          117,
+                                          "trailer",
+                                          "homepage",
+                                          "studio",
+                                          "imageUrl",
+                                          "genre");
+
+            newKeanu.playedIn(billAndTeds, "Bill");
             session.save(newKeanu);
             txn1.commit();
 
@@ -292,8 +351,26 @@ public class EndToEndTests
         {
             txn1.begin();
 
-            Actor keanu = new Actor("Keanu Reeves");
-            Movie matrix = new Movie("Matrix", 1999);
+            Actor keanu = new Actor(12,
+                                    "Keanu Reeves",
+                                    LocalDate.of(1969, 4, 14),
+                                    "Somewhere, USA",
+                                    "A dude",
+                                    "http://url");
+            Movie matrix = new Movie(75,
+                                     "Matrix",
+                                     "a movie",
+                                     "imdb",
+                                     "en",
+                                     "tagline",
+                                     LocalDate.of(1999, 5, 17),
+                                     117,
+                                     "trailer",
+                                     "homepage",
+                                     "studio",
+                                     "imageUrl",
+                                     "genre");
+
             keanu.playedIn(matrix, "Neo");
             session.save(keanu);
 
@@ -301,7 +378,19 @@ public class EndToEndTests
             assertEquals(1, actors.size());
 
             keanu.setName("KeanuNuNu Reeves");
-            keanu.playedIn(new Movie("Bill and Ted's Excellent Adventure", 1986), "Bill");
+            Movie billAndTeds = new Movie(102,
+                                          "Bill and Teds",
+                                          "a movie",
+                                          "imdb",
+                                          "en",
+                                          "tagline",
+                                          LocalDate.of(1986, 5, 17),
+                                          117,
+                                          "trailer",
+                                          "homepage",
+                                          "studio",
+                                          "imageUrl",
+                                          "genre"); keanu.playedIn(billAndTeds, "Bill");
             session.save(keanu);
 
             Actor fakeKeanu = session.load(Actor.class, "name", "KeanuNuNu Reeves");
