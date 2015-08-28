@@ -34,7 +34,7 @@ Add the following to your ```<dependencies> .. </dependencies>``` section.
 <dependency>
     <groupId>io.innerloop</groupId>
     <artifactId>java-neo4j-ogm</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
@@ -43,13 +43,13 @@ Add the following to your ```<dependencies> .. </dependencies>``` section.
 Add the following to your ```dependencies { .. }``` section.
 
 ```gradle
-compile group: 'io.innerloop', name: 'java-neo4j-ogm', version: '0.1.0'
+compile group: 'io.innerloop', name: 'java-neo4j-ogm', version: '0.2.0'
 ```
 
 ... or more simply:
 
 ```gradle
-compile: 'io.innerloop:java-neo4j-ogm:0.1.0'
+compile: 'io.innerloop:java-neo4j-ogm:0.2.0'
 ```
 
 # Usage
