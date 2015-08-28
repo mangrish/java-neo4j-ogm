@@ -234,6 +234,10 @@ finally
 This is a simple Java OGM for Neo4J. This OGM is designed to be used
 agnostic of any other framework, library or middleware.
 
+I have created a separate spring module which adds @Transactional support etc. for spring project.
+See the documentation for that module [here](https://github.com/inner-loop/spring-neo4j-ogm): 
+
+
 If you want out of the box Spring support right now check out the 
 [Spring Data Neo4J project](http://docs.spring.io/spring-data/neo4j/docs/4.0.0.M1/) (of which I'm also a contributor!)
 
