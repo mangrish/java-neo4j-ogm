@@ -1,5 +1,7 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
+import io.innerloop.neo4j.ogm.Converter;
+import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.annotations.RelationshipProperties;
 import io.innerloop.neo4j.ogm.annotations.Transient;
 import io.innerloop.neo4j.ogm.impl.index.Index;
@@ -9,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,15 +39,17 @@ public class MetadataMap
 
     private Map<NodeLabel, ClassMetadata<?>> lookupByNodeLabel;
 
+    private Map<Class<? extends Converter>, Converter> converters;
+
     private Reflections reflections;
 
     public MetadataMap(String... packages)
     {
-        reflections = new Reflections(packages, new SubTypesScanner(false));
-
+        this.reflections = new Reflections(packages, new SubTypesScanner(false));
         this.lookupByClass = new HashMap<>();
         this.lookupByNodeLabel = new HashMap<>();
         this.lookupRelationshipPropertiesByClass = new HashMap<>();
+        this.converters = buildConverters();
 
         List<Class<?>> classesToProcess = new ArrayList<>();
         List<Class<?>> interfacesToProcess = new ArrayList<>();
@@ -121,6 +126,34 @@ public class MetadataMap
         }
     }
 
+    private Map<Class<? extends Converter>, Converter> buildConverters()
+    {
+        Reflections reflections = new Reflections("io.innerloop.neo4j.ogm.impl.converters", new SubTypesScanner(false));
+        Set<Class<? extends Converter>> subTypesOfConverter = reflections.getSubTypesOf(Converter.class);
+
+        Map<Class<? extends Converter>, Converter> converters = new HashMap<>();
+
+        for (Class<? extends Converter> converterCls : subTypesOfConverter)
+        {
+            Converter converter;
+            Class<? extends Converter> type;
+            try
+            {
+                converter = converterCls.newInstance();
+                type = (Class)((ParameterizedType) converterCls.getGenericInterfaces()[0]).getActualTypeArguments()[0];
+
+            }
+            catch (InstantiationException | IllegalAccessException e)
+            {
+                throw new RuntimeException("Could not instantiate converter class: [" + converterCls.getName() +
+                                           "]", e);
+            }
+            converters.put(type, converter);
+        }
+
+        return converters;
+    }
+
 
     private void addInterfaceLabels(Class<?> cls, Set<String> labels, List<Class<?>> interfacesToProcess)
     {
@@ -152,6 +185,11 @@ public class MetadataMap
     public <T> ClassMetadata<T> get(T entity)
     {
         return lookupByClass.get(entity.getClass());
+    }
+
+    public Converter getConverterFor(Class<? extends Converter> type)
+    {
+        return converters.get(type);
     }
 
     public Collection<Index> getIndexes()

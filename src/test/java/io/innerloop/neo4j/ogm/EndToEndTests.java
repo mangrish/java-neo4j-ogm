@@ -251,7 +251,7 @@ public class EndToEndTests
         {
             transaction2.begin();
             session2.delete(keanu);
-            transaction2.flush();
+            session2.flush();
 
             List<Actor> actors = session2.loadAll(Actor.class, "name", "Keanu Reeves");
             assertEquals(0, actors.size());
@@ -629,7 +629,9 @@ public class EndToEndTests
         try
         {
             transaction2.begin();
-            Bike bike = session2.load(Bike.class, "brand", "Huffy");
+            Map<String,Object> params = new HashMap<>();
+            params.put("brand", "Huffy");
+            Bike bike = session2.queryForObject(Bike.class, "MATCH (b:Bike)-[r]-() WHERE b.brand = {brand} RETURN b, r", params);
             Saddle newSaddle = new Saddle();
             newSaddle.setPrice(19.95);
             newSaddle.setMaterial("Vinyl");
@@ -654,7 +656,11 @@ public class EndToEndTests
         try
         {
             transaction3.begin();
-            Bike bike = session3.load(Bike.class, "brand", "Huffy");
+            Map<String,Object> params = new HashMap<>();
+            params.put("brand", "Huffy");
+            Bike bike = session3.queryForObject(Bike.class,
+                                                "MATCH (b:Bike)-[r]-() WHERE b.brand = {brand} RETURN b, r",
+                                                params);
             assertEquals(bike.getLogos().size(), 4);
             assertEquals(((SpeedFrame) bike.getFrame()).getGearRatios().size(), 5);
             transaction3.commit();
@@ -792,7 +798,9 @@ public class EndToEndTests
         try
         {
             transaction2.begin();
-            Subject java = session2.load(Subject.class, "name", "Java Programming Language");
+            Map<String, Object> params = new HashMap<>();
+            params.put("name", "Java Programming Language");
+            Subject java = session2.queryForObject(Subject.class, "MATCH (s:Subject)-[r]-() WHERE s.name={name} RETURN s,r", params);
             assertNotNull(java);
             assertEquals(2, java.getRequiredKnowledge().size());
             assertEquals(java.getAliases().size(), 3);

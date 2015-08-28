@@ -1,20 +1,15 @@
 package io.innerloop.neo4j.ogm.models.bike;
 
-import io.innerloop.neo4j.ogm.annotations.Aggregate;
-import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.annotations.Id;
-import io.innerloop.neo4j.ogm.converters.UUIDConverter;
-import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
+import io.innerloop.neo4j.ogm.generators.UuidGenerator;
 
 import java.util.UUID;
 
-@Aggregate
 public class Frame
 {
     public Long id;
 
     @Id
-    @Convert(UUIDConverter.class)
     private UUID uuid;
 
     private Integer size;

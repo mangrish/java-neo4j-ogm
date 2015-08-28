@@ -1,4 +1,4 @@
-package io.innerloop.neo4j.ogm.converters;
+package io.innerloop.neo4j.ogm;
 
 public interface Converter<S, T>
 {

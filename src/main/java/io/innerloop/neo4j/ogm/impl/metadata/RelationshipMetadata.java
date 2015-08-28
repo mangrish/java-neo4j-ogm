@@ -1,6 +1,5 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
-import io.innerloop.neo4j.ogm.annotations.Fetch;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
 import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 
@@ -28,8 +27,6 @@ public class RelationshipMetadata
 
     private Class<?>[] paramterizedTypes;
 
-    private boolean fetchEnabled;
-
     private String name;
 
     private Map<String, Object> properties;
@@ -42,11 +39,6 @@ public class RelationshipMetadata
         this.type = field.getType();
         this.field = field;
         this.direction = direction;
-
-        if (field.isAnnotationPresent(Fetch.class))
-        {
-            this.fetchEnabled = true;
-        }
 
         if (Collection.class.isAssignableFrom(field.getType()))
         {
@@ -76,11 +68,6 @@ public class RelationshipMetadata
     public Class<?>[] getParamterizedTypes()
     {
         return paramterizedTypes;
-    }
-
-    public boolean isFetchEnabled()
-    {
-        return fetchEnabled;
     }
 
     public <T> Object getValue(T entity)

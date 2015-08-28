@@ -1,6 +1,8 @@
-package io.innerloop.neo4j.ogm.converters;
+package io.innerloop.neo4j.ogm.impl.converters;
 
 
+
+import io.innerloop.neo4j.ogm.Converter;
 
 import java.util.UUID;
 

@@ -163,7 +163,6 @@ public class Session
             Graph graph = statement.getResult();
             return graphResultMapper.map(type, graph, parameters);
         }
-
     }
 
     private void assertReadOnly(String cypher)

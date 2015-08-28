@@ -1,7 +1,8 @@
 package io.innerloop.neo4j.ogm.impl.metadata;
 
 import io.innerloop.neo4j.ogm.annotations.Convert;
-import io.innerloop.neo4j.ogm.converters.Converter;
+import io.innerloop.neo4j.ogm.Converter;
+import io.innerloop.neo4j.ogm.generators.UuidGenerator;
 import io.innerloop.neo4j.ogm.impl.util.ReflectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Created by markangrish on 11/11/2014.
@@ -50,6 +52,7 @@ public class PropertyMetadata
         {
             paramterizedType = ReflectionUtils.getParameterizedTypes(field)[0];
         }
+
         if (field.isAnnotationPresent(Convert.class))
         {
             Class<?> converterCls = field.getAnnotation(Convert.class).value();
@@ -130,6 +133,10 @@ public class PropertyMetadata
                     {
                         val = new HashSet<>(values);
                     }
+                }
+                else if (UUID.class.isAssignableFrom(type))
+                {
+                    val = UUID.fromString((String)value);
                 }
                 else if (List.class.isAssignableFrom(type) && paramterizedType != null && paramterizedType.isEnum())
                 {

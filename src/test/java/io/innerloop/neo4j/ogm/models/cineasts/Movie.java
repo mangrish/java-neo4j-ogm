@@ -3,7 +3,8 @@ package io.innerloop.neo4j.ogm.models.cineasts;
 import io.innerloop.neo4j.ogm.annotations.Convert;
 import io.innerloop.neo4j.ogm.annotations.Id;
 import io.innerloop.neo4j.ogm.annotations.Relationship;
-import io.innerloop.neo4j.ogm.converters.LocalDateConverter;
+import io.innerloop.neo4j.ogm.impl.converters.LocalDateConverter;
+import io.innerloop.neo4j.ogm.impl.converters.LocalDateTimeConverter;
 
 import java.time.LocalDate;
 import java.util.HashMap;

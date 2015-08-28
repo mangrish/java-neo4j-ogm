@@ -1,11 +1,7 @@
 package io.innerloop.neo4j.ogm.models.complex;
 
-import io.innerloop.neo4j.ogm.annotations.Convert;
-import io.innerloop.neo4j.ogm.annotations.Fetch;
 import io.innerloop.neo4j.ogm.annotations.Id;
-import io.innerloop.neo4j.ogm.converters.LocalDateTimeConverter;
-import io.innerloop.neo4j.ogm.converters.UUIDConverter;
-import io.innerloop.neo4j.ogm.models.utils.UuidGenerator;
+import io.innerloop.neo4j.ogm.generators.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,17 +30,14 @@ public class Subject
     private Long id;
 
     @Id
-    @Convert(UUIDConverter.class)
     private UUID uuid;
 
     private String name;
 
     private Status status;
 
-    @Convert(LocalDateTimeConverter.class)
     private LocalDateTime verifiedDate;
 
-    @Convert(LocalDateTimeConverter.class)
     private LocalDateTime lastUpdatedDate;
 
     private String description;
@@ -55,7 +48,6 @@ public class Subject
 
     private String disambiguation;
 
-    @Fetch
     private Map<Subject, WeightedRelationship> requiredKnowledge;
 
     private Set<Category> categories;
