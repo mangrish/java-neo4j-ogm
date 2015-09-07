@@ -105,7 +105,8 @@ public class PropertyMetadata
                     }
                     catch (NoSuchMethodException e)
                     {
-                        e.printStackTrace();
+                        // ignore... This is a check of paramterized types only able to be done like this when
+                        // using reflection.
                     }
                     val = converter.deserialize(longCheckedVal);
                 }

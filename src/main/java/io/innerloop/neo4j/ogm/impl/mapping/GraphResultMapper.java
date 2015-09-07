@@ -79,7 +79,7 @@ public class GraphResultMapper
 
             if (type.isAssignableFrom(instance.getClass()))
             {
-                if (params == null) // This means it's a load(Class) call.. this is a pretty bad semantic.
+                if (params == null || params.size() == 0) // This means it's a load(Class) call.. this is a pretty bad semantic.
                 {
                     results.put(node.getId(), (T) instance);
                 }
