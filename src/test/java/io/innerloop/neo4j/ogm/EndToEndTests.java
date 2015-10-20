@@ -586,6 +586,85 @@ public class EndToEndTests
         }
     }
 
+
+    @Test
+    public void testDeleteFromCollectionOfDomainObject()
+    {
+        SessionFactory sessionFactory = new SessionFactory(client, "io.innerloop.neo4j.ogm.models.bike");
+        Session session = sessionFactory.getCurrentSession();
+        Transaction transaction = session.getTransaction();
+        try
+        {
+            transaction.begin();
+            Saddle expected = new Saddle();
+            expected.setPrice(29.95);
+            expected.setMaterial("Leather");
+            Wheel frontWheel = new Wheel();
+            Wheel backWheel = new Wheel();
+            Bike bike = new Bike();
+            SpeedFrame frame = new SpeedFrame("Carbon Composite", 2.2);
+            frame.addGearRatio("1");
+            frame.addGearRatio("2");
+            frame.addGearRatio("3");
+            frame.addGearRatio("4");
+            Set<Bike.Logo> logos = new HashSet<>();
+            logos.add(Bike.Logo.LOGO_1);
+            logos.add(Bike.Logo.LOGO_2);
+            logos.add(Bike.Logo.LOGO_3);
+            logos.add(Bike.Logo.LOGO_4);
+            bike.setBrand("Huffy");
+            bike.setWheels(Arrays.asList(frontWheel, backWheel));
+            bike.setSaddle(expected);
+            bike.setFrame(frame);
+            bike.setLogos(logos);
+
+            session.save(bike);
+            transaction.commit();
+        }
+        finally
+        {
+            session.close();
+        }
+
+
+        Session session2 = sessionFactory.getCurrentSession();
+        Transaction transaction2 = session2.getTransaction();
+        try
+        {
+            transaction2.begin();
+            Map<String,Object> params = new HashMap<>();
+            params.put("brand", "Huffy");
+            Bike b = session2.queryForObject(Bike.class, "MATCH (b:Bike)-[r]-() WHERE b.brand = {brand} RETURN b, r", params);
+            b.getLogos().clear();
+            b.getLogos().add(Bike.Logo.LOGO_5);
+            session2.save(b);
+            transaction2.commit();
+        }
+        finally
+        {
+            session2.close();
+        }
+
+        Session session3 = sessionFactory.getCurrentSession();
+        Transaction transaction3 = session3.getTransaction();
+        try
+        {
+            transaction3.begin();
+            Map<String,Object> params = new HashMap<>();
+            params.put("brand", "Huffy");
+            Bike b2 = session3.queryForObject(Bike.class,
+                                                "MATCH (b:Bike)-[r]-() WHERE b.brand = {brand} RETURN b, r",
+                                                params);
+            assertEquals(b2.getLogos().size(), 1);
+            transaction3.commit();
+        }
+        finally
+        {
+            session3.close();
+        }
+    }
+
+
     @Test
     public void testSaveDomainObjectsThenUpdate()
     {
@@ -614,7 +693,6 @@ public class EndToEndTests
             bike.setSaddle(expected);
             bike.setFrame(frame);
             bike.setLogos(logos);
-            session.save(bike);
 
             session.save(bike);
             transaction.commit();
