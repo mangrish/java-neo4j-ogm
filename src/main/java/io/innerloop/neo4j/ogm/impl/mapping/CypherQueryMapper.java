@@ -82,7 +82,7 @@ public class CypherQueryMapper
         }
         LOG.trace("Building match statement for type: [{}] with  params: [{}]", type.getSimpleName(), parameters);
 
-        MatchStatementKey msKey = new MatchStatementKey(type, parameters!= null ? parameters.keySet(): null);
+        MatchStatementKey msKey = new MatchStatementKey(type, parameters != null ? parameters.keySet() : null);
 
         GraphStatement statement = matchStatements.get(msKey);
 
@@ -126,96 +126,96 @@ public class CypherQueryMapper
             usage.put(parentKey, sequence.computeNext());
 
 
-                //            while (!toVisit.isEmpty())
-                //            {
-                //                Class<?> cls = toVisit.poll();
-                //                Pair<Class<?>, Integer> key = new Pair<>(cls, currentDepth);
-                //
-                //                if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
-                //                {
-                //                    Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(cls);
-                //                    subTypesOf.forEach(k -> {
-                //                        if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
-                //                        {
-                //                            toVisit.offer(k);
-                //                        }
-                //                    });
-                //                    continue;
-                //                }
-                //
-                //                ClassMetadata<?> classMetadata = metadataMap.get(cls);
-                //
-                //                for (RelationshipMetadata rm : classMetadata.getRelationships())
-                //                {
-                //                    Class<?> relationshipCls = rm.getType();
-                //                    if (rm.isCollection())
-                //                    {
-                //                        relationshipCls = rm.getParamterizedTypes()[0];
-                //                    }
-                //                    if (rm.isMap())
-                //                    {
-                //                        relationshipCls = rm.getParamterizedTypes()[0];
-                //                    }
-                //
-                //                    LOG.debug("depth is [{}]", currentDepth);
-                //                    String lhs = usage.get(key);
-                //                    LOG.debug("LHS KEY: [{}]", key);
-                //                    Pair<Class<?>, Integer> rhsKey = new Pair<>(relationshipCls, currentDepth + 1);
-                //                    LOG.debug("RHS KEY: [{}]", rhsKey);
-                //
-                //                    String rhs = usage.get(rhsKey);
-                //                    if (rhs == null)
-                //                    {
-                //                        rhs = sequence.computeNext();
-                //                        if (relationshipCls.isInterface() || Modifier.isAbstract(relationshipCls.getModifiers()))
-                //                        {
-                //                            Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(relationshipCls);
-                //                            final int finalCurrentDepth = currentDepth + 1;
-                //                            final String finalRhs = rhs;
-                //                            subTypesOf.forEach(k -> {
-                //                                if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
-                //                                {
-                //                                    usage.put(new Pair<>(k, finalCurrentDepth), finalRhs);
-                //                                }
-                //                            });
-                //                            nextElementsToDepthIncrease += subTypesOf.size();
-                //                        }
-                //                        else
-                //                        {
-                //                            usage.put(new Pair<>(relationshipCls, currentDepth + 1), rhs);
-                //                            nextElementsToDepthIncrease++;
-                //                        }
-                //
-                //                    }
-                //
-                //                    query += " OPTIONAL MATCH (" + lhs + ")-[r" + relationshipCount + ":" + rm.getName() + "]-(" + rhs +
-                //                             ") ";
-                //                    query += "WITH " + alphaUsed(usage) + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" +
-                //                             relationshipCount;
-                //                    for (int i = 1; i < relationshipCount; i++)
-                //                    {
-                //                        query += ", r" + i;
-                //                    }
-                //                    relationshipCount++;
-                //
-                //                    Pair<Class<?>, Integer> prevKey = new Pair<>(relationshipCls, currentDepth - 1);
-                //                    String prev = usage.get(prevKey);
-                //                    if (prev != null && relationshipCls.equals(cls))
-                //                    {
-                //                        LOG.debug("CYCLE DETECTED. Preventing loading of next cycle.");
-                //                        continue;
-                //                    }
-                //
-                //                    toVisit.offer(relationshipCls);
-                //                }
-                //
-                //                if (--elementsToDepthIncrease == 0)
-                //                {
-                //                    elementsToDepthIncrease = nextElementsToDepthIncrease;
-                //                    nextElementsToDepthIncrease = 0;
-                //                    currentDepth++;
-                //                }
-                //            }
+            //            while (!toVisit.isEmpty())
+            //            {
+            //                Class<?> cls = toVisit.poll();
+            //                Pair<Class<?>, Integer> key = new Pair<>(cls, currentDepth);
+            //
+            //                if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers()))
+            //                {
+            //                    Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(cls);
+            //                    subTypesOf.forEach(k -> {
+            //                        if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
+            //                        {
+            //                            toVisit.offer(k);
+            //                        }
+            //                    });
+            //                    continue;
+            //                }
+            //
+            //                ClassMetadata<?> classMetadata = metadataMap.get(cls);
+            //
+            //                for (RelationshipMetadata rm : classMetadata.getRelationships())
+            //                {
+            //                    Class<?> relationshipCls = rm.getType();
+            //                    if (rm.isCollection())
+            //                    {
+            //                        relationshipCls = rm.getParamterizedTypes()[0];
+            //                    }
+            //                    if (rm.isMap())
+            //                    {
+            //                        relationshipCls = rm.getParamterizedTypes()[0];
+            //                    }
+            //
+            //                    LOG.debug("depth is [{}]", currentDepth);
+            //                    String lhs = usage.get(key);
+            //                    LOG.debug("LHS KEY: [{}]", key);
+            //                    Pair<Class<?>, Integer> rhsKey = new Pair<>(relationshipCls, currentDepth + 1);
+            //                    LOG.debug("RHS KEY: [{}]", rhsKey);
+            //
+            //                    String rhs = usage.get(rhsKey);
+            //                    if (rhs == null)
+            //                    {
+            //                        rhs = sequence.computeNext();
+            //                        if (relationshipCls.isInterface() || Modifier.isAbstract(relationshipCls.getModifiers()))
+            //                        {
+            //                            Set<? extends Class<?>> subTypesOf = metadataMap.findSubTypesOf(relationshipCls);
+            //                            final int finalCurrentDepth = currentDepth + 1;
+            //                            final String finalRhs = rhs;
+            //                            subTypesOf.forEach(k -> {
+            //                                if (!k.isInterface() && !Modifier.isAbstract(k.getModifiers()))
+            //                                {
+            //                                    usage.put(new Pair<>(k, finalCurrentDepth), finalRhs);
+            //                                }
+            //                            });
+            //                            nextElementsToDepthIncrease += subTypesOf.size();
+            //                        }
+            //                        else
+            //                        {
+            //                            usage.put(new Pair<>(relationshipCls, currentDepth + 1), rhs);
+            //                            nextElementsToDepthIncrease++;
+            //                        }
+            //
+            //                    }
+            //
+            //                    query += " OPTIONAL MATCH (" + lhs + ")-[r" + relationshipCount + ":" + rm.getName() + "]-(" + rhs +
+            //                             ") ";
+            //                    query += "WITH " + alphaUsed(usage) + ", COLLECT(DISTINCT r" + relationshipCount + ") as r" +
+            //                             relationshipCount;
+            //                    for (int i = 1; i < relationshipCount; i++)
+            //                    {
+            //                        query += ", r" + i;
+            //                    }
+            //                    relationshipCount++;
+            //
+            //                    Pair<Class<?>, Integer> prevKey = new Pair<>(relationshipCls, currentDepth - 1);
+            //                    String prev = usage.get(prevKey);
+            //                    if (prev != null && relationshipCls.equals(cls))
+            //                    {
+            //                        LOG.debug("CYCLE DETECTED. Preventing loading of next cycle.");
+            //                        continue;
+            //                    }
+            //
+            //                    toVisit.offer(relationshipCls);
+            //                }
+            //
+            //                if (--elementsToDepthIncrease == 0)
+            //                {
+            //                    elementsToDepthIncrease = nextElementsToDepthIncrease;
+            //                    nextElementsToDepthIncrease = 0;
+            //                    currentDepth++;
+            //                }
+            //            }
             sw.split("Completed statement.");
 
             if (parameters != null)
@@ -362,6 +362,7 @@ public class CypherQueryMapper
                     else
                     {
                         edgeClassMetadata = metadataMap.get(edge);
+                        removeCurrentRelationship(relationshipStatements, ref, classMetadata, rm);
                         addRelationshipStatement(relationshipStatements,
                                                  toVisit,
                                                  visited,
@@ -381,6 +382,33 @@ public class CypherQueryMapper
         sw.stop();
 
         return new ArrayList<>(results);
+    }
+
+    private void removeCurrentRelationship(LinkedHashSet<Statement> relationshipStatements,
+                                           Object ref,
+                                           ClassMetadata<?> classMetadata,
+                                           RelationshipMetadata rm)
+    {
+        RowStatement relationshipStatement = new RowStatement("MATCH (a" +
+                                                              classMetadata.getNodeLabel().asCypher() +
+                                                              "{" +
+                                                              classMetadata.getPrimaryIdField().getName() +
+                                                              ":{0}})" +
+                                                              (rm.getDirection()
+                                                                       .equals(Relationship.Direction.INCOMING) ?
+                                                                       "<" :
+                                                                       "") +
+                                                              "-" +
+                                                              "[r:" +
+                                                              rm.getName() +
+                                                              "]" +
+                                                              "-" +
+                                                              (rm.getDirection()
+                                                                       .equals(Relationship.Direction.OUTGOING) ?
+                                                                       ">" :
+                                                                       "") + "() DELETE r");
+        relationshipStatement.setParam("0", classMetadata.getPrimaryIdField().getValue(ref));
+        relationshipStatements.add(relationshipStatement);
     }
 
     private void addRelationshipStatement(LinkedHashSet<Statement> relationshipStatements,
