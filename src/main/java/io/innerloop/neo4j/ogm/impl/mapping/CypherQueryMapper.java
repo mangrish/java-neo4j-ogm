@@ -538,7 +538,7 @@ public class CypherQueryMapper
 
         GraphStatement statement = new GraphStatement("MATCH (e" + classMetadata.getNodeLabel().asCypher() +
                                                       "{" + classMetadata.getPrimaryIdField().getName() +
-                                                      ":{0}})-[r]-() DELETE e, r");
+                                                      ":{0}}) OPTIONAL MATCH (e)-[r]-() DELETE e, r");
         statement.setParam("0", classMetadata.getPrimaryIdField().getValue(entity));
         results.add(statement);
 
