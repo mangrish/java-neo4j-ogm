@@ -6,7 +6,8 @@ apply plugin: 'signing'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 group = "io.innerloop"
-version = "0.3.0-SNAPSHOT"
+archivesBaseName = "java-neo4j-client"
+version = "0.3.0"
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
 task wrapper(type: Wrapper) {
@@ -31,7 +32,7 @@ dependencies {
     testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.2'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
     compile group: 'com.fasterxml.uuid', name:'java-uuid-generator', version: '3.1.4'
-    compile group: 'io.innerloop', name:'java-neo4j-client', version: '0.4.0-SNAPSHOT', changing: true
+    compile group: 'io.innerloop', name:'java-neo4j-client', version: '0.4.0'
     compile group: 'org.reflections', name: 'reflections', version: '0.9.10'
 }
 
@@ -65,15 +66,15 @@ uploadArchives {
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
             repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: System.getProperty('nexusUsername'), password: System.getProperty('nexusPassword'))
+                authentication(userName: ossrhUsername, password: ossrhPassword)
             }
 
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: System.getProperty('nexusUsername'), password: System.getProperty('nexusPassword'))
+                authentication(userName: ossrhUsername, password: ossrhPassword)
             }
 
             pom.project {
-                name project.name
+                name 'Java Neo4j OGM'
                 packaging 'jar'
                 description 'A Java Object Graph Mapper (OGM) for Neo4J'
                 url 'https://github.com/inner-loop/java-neo4j-ogm'
