@@ -8,6 +8,9 @@ A minimalist Java Object Graph Mapper (OGM) for Neo4J.
 java-neo4j-ogm is a server first, cypher centric Java mapper for Neo4J. 
 
 
+It's highly recommended to use this library with [Spring Neo4J OGM](https://github.com/inner-loop/spring-neo4j-ogm) to make use of
+the @Transactional annotation.
+
 # Features
 1. Mapping of POJO's to Neo4J Nodes & Relationships with minimal use of annotations.
 1. First class support for Cypher querying with automatic domain mapping of results.
@@ -24,7 +27,7 @@ java-neo4j-ogm is a server first, cypher centric Java mapper for Neo4J.
 The Java Neo4J OGM is written for and requires:
 
 - Java 8+
-- Neo4J 2.2+ Standalone Database.
+- Neo4J 2.3+ Standalone Database.
 
 ## Install from Maven
 
@@ -34,7 +37,7 @@ Add the following to your ```<dependencies> .. </dependencies>``` section.
 <dependency>
     <groupId>io.innerloop</groupId>
     <artifactId>java-neo4j-ogm</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
 </dependency>
 ```
 
@@ -43,13 +46,13 @@ Add the following to your ```<dependencies> .. </dependencies>``` section.
 Add the following to your ```dependencies { .. }``` section.
 
 ```gradle
-compile group: 'io.innerloop', name: 'java-neo4j-ogm', version: '0.2.0'
+compile group: 'io.innerloop', name: 'java-neo4j-ogm', version: '0.3.0'
 ```
 
 ... or more simply:
 
 ```gradle
-compile: 'io.innerloop:java-neo4j-ogm:0.2.0'
+compile: 'io.innerloop:java-neo4j-ogm:0.3.0'
 ```
 
 # Usage
@@ -229,6 +232,11 @@ finally
 
 ```
 
+By default calling ```session.load()```, ```session.loadAll()```, or ```session.loadById()``` will only result in a retrieval depth of 0.
+That is only that object or type of object is loaded. Symmetric loading (where depth is specified) is not supported. Instead this library
+prefers non trivial loading to be done with ```session.query()``` or ```session.queryForObject()```. A DSL for basic querying is
+currently being developed and will be released in a future version. If you would like to provide som input on the DSL API please raise an issue.
+
 
 # Spring Support
 This is a simple Java OGM for Neo4J. This OGM is designed to be used
@@ -237,22 +245,16 @@ agnostic of any other framework, library or middleware.
 I have created a separate spring module which adds @Transactional support etc. for spring project.
 See the documentation for that module [here](https://github.com/inner-loop/spring-neo4j-ogm): 
 
-
-If you want out of the box Spring support right now check out the 
-[Spring Data Neo4J project](http://docs.spring.io/spring-data/neo4j/docs/4.0.0.M1/) (of which I'm also a contributor!)
-
-
 #Feature Requests / Roadmap
 
 Do you have a feature request? [Create a new Issue](https://github.com/inner-loop/java-neo4j-ogm/issues/new).
 
-## Upcoming features and fixes
+## Known issues
+- Delete element in a collection. When an element is deleted in a collection the save is not propagated properly.
+
+## Roadmap
 
 - Automatic registration of default converters
-- Fix Session/Transaction behaviour.
-- Add @Target annotation which will allow DDD style loading against the target's @Id in the referencing class.
 - Add performance tests against SDN 4.x
 - Introduce statement caching and 2nd Level Session Caching.
-- Add support to weight Lists by a relationship property.
-- Switch reflective code to Javassist. Remove required ```Long id``` field from classes.
-- Add Spring @Transactional Support
+- Introduce a DSL for basic querying.
