@@ -1,5 +1,6 @@
 java-neo4j-ogm
 ==============
+***NOTE: This project is no longer actively developed supported however, I am an active developer now on the [the official Neo4j OGM](https://github.com/neo4j/neo4j-ogm) and recommend those looking for a Java OGM use that.***
 
 A minimalist Java Object Graph Mapper (OGM) for Neo4J.
 
